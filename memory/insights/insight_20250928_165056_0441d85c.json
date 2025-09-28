@@ -1,0 +1,35 @@
+{
+  "insight_id": "PATIENT_INSIGHT_20250928_165056",
+  "insight_type": "safety_concern",
+  "title": "High-Risk and Outlier Patients Identified",
+  "description": "Analysis identified 4 high-risk patients and 0 outlier patients requiring attention.",
+  "confidence_score": 0.75,
+  "clinical_significance": "medium",
+  "supporting_evidence": [
+    {
+      "type": "patient_analysis",
+      "data": {
+        "high_risk_count": 4,
+        "outlier_count": 0
+      }
+    }
+  ],
+  "recommendations": [
+    "Review individual patient cases for high-risk patients",
+    "Consider dose adjustments or additional monitoring",
+    "Investigate common factors among outlier patients"
+  ],
+  "created_at": "2025-09-28T16:50:56.529596",
+  "patient_ids": [
+    "PATIENT_0045",
+    "PATIENT_0012",
+    "PATIENT_0034",
+    "PATIENT_0011"
+  ],
+  "cohorts": [],
+  "tags": [
+    "patients",
+    "safety",
+    "outliers"
+  ]
+}
