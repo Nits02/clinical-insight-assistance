@@ -255,7 +255,15 @@ Ensure your analysis is objective, evidence-based, and clinically relevant.
             
             # Parse JSON response and create structured result
             try:
-                parsed_response = json.loads(response)
+                # Clean response by removing markdown code blocks if present
+                cleaned_response = response.strip()
+                if cleaned_response.startswith('```json'):
+                    cleaned_response = cleaned_response[7:]  # Remove ```json
+                if cleaned_response.endswith('```'):
+                    cleaned_response = cleaned_response[:-3]  # Remove ```
+                cleaned_response = cleaned_response.strip()
+                
+                parsed_response = json.loads(cleaned_response)
                 return AnalysisResult(
                     summary=parsed_response.get('summary', ''),
                     themes=parsed_response.get('themes', []),
@@ -538,7 +546,15 @@ Focus on:
             
             # Parse JSON response and validate structure
             try:
-                adverse_events = json.loads(response)
+                # Clean response by removing markdown code blocks if present
+                cleaned_response = response.strip()
+                if cleaned_response.startswith('```json'):
+                    cleaned_response = cleaned_response[7:]  # Remove ```json
+                if cleaned_response.endswith('```'):
+                    cleaned_response = cleaned_response[:-3]  # Remove ```
+                cleaned_response = cleaned_response.strip()
+                
+                adverse_events = json.loads(cleaned_response)
                 return adverse_events if isinstance(adverse_events, list) else []
             except json.JSONDecodeError:
                 logger.warning("Failed to parse adverse events JSON, returning empty list")
