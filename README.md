@@ -23,7 +23,7 @@ A comprehensive AI-powered project for providing clinical insights and assistanc
 | 🔍 **Issue Detection Tests** | 43 | ✅ All Passing |
 | 📈 **Cohort Analysis Tests** | 42 | ✅ All Passing |
 | 🎯 **Scenario Simulation Tests** | 34 | ✅ All Passing |
-| � **Integration Tests** | 3 | ✅ All Passing |
+| 🔗 **Integration Tests** | 3 | ✅ All Passing |
 | 📁 **Source Modules** | 5 | ✅ Production Ready |
 | 🌐 **AI Providers** | 2 | ✅ Azure + OpenAI |
 | 📋 **Dependencies** | 30+ | ✅ Latest Versions |
@@ -178,17 +178,17 @@ issue = {
 
 A comprehensive AI-powered project for providing clinical insights and assistance through advanced data processing, analysis, and GenAI-powered recommendations for clinical trial data.
 
-## � **Project Statistics**
+## 📊 **Project Statistics**
 
 | Component | Count | Status |
 |-----------|-------|--------|
 | 🧪 **Total Tests** | 173 | ✅ All Passing |
 | 📊 **Data Loader Tests** | 26 | ✅ All Passing |
 | 🤖 **GenAI Interface Tests** | 25 | ✅ All Passing |
-| � **Issue Detection Tests** | 43 | ✅ All Passing |
+| 🔍 **Issue Detection Tests** | 43 | ✅ All Passing |
 | 📈 **Cohort Analysis Tests** | 42 | ✅ All Passing |
 | 🎯 **Scenario Simulation Tests** | 34 | ✅ All Passing |
-| �🔗 **Integration Tests** | 3 | ✅ All Passing |
+| 🔗 **Integration Tests** | 3 | ✅ All Passing |
 | 📁 **Source Modules** | 5 | ✅ Production Ready |
 | 🌐 **AI Providers** | 2 | ✅ Azure + OpenAI |
 | 📋 **Dependencies** | 30+ | ✅ Latest Versions |
@@ -458,7 +458,7 @@ summary = loader.get_summary_statistics()
 print(f"Total patients: {summary['metadata']['total_patients']}")
 ```
 
-## � GenAI Interface Module
+## 🤖 GenAI Interface Module
 
 ### 🚀 **AI-Powered Clinical Analysis**
 
@@ -855,7 +855,7 @@ This module provides powerful predictive modeling capabilities, allowing clinica
 ## 🧪 Testing
 ```
 
-## �🧪 Testing
+## 🧪 Testing
 
 ### 🚀 **Run All Tests**
 
@@ -1536,7 +1536,7 @@ default_config = {
 
 ---
 
-## �‍💻 Author & Contact
+## 👨‍💻 Author & Contact
 
 **Nitesh Sharma**
 - 📧 **Email**: [nitesh.sharma@live.com](mailto:nitesh.sharma@live.com)
@@ -1549,7 +1549,7 @@ Passionate about leveraging data science and AI to improve healthcare outcomes. 
 
 ---
 
-## �📞 Support
+## 📞 Support
 
 ### 🐛 **Issues & Bug Reports**
 - 📋 Use GitHub Issues for bug reports
