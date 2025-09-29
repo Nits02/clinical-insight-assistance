@@ -4,7 +4,7 @@
 [![OpenAI](https://img.shields.io/badge/OpenAI-GPT--4-green.svg)](https://openai.com)
 [![Azure](https://img.shields.io/badge/Azure-OpenAI-0066CC.svg)](https://azure.microsoft.com/en-us/products/ai-services/openai-service)
 [![Pandas](https://img.shields.io/badge/Pandas-2.0+-green.svg)](https://pandas.pydata.org)
-[![Tests](https://img.shields.io/badge/Tests-173%20Total-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/Tests-183%20Total-brightgreen.svg)](tests/)
 [![GenAI](https://img.shields.io/badge/GenAI-Azure%20OpenAI-blue.svg)](src/genai_interface.py)
 [![Detection](https://img.shields.io/badge/Detection-Clinical%20Issues-red.svg)](src/issue_detection.py)
 [![Cohort Analysis](https://img.shields.io/badge/Cohort-Statistical%20Analysis-purple.svg)](src/cohort_analysis.py)
@@ -196,8 +196,10 @@ A comprehensive AI-powered project for providing clinical insights and assistanc
 ## 📋 Table of Contents
 
 - [🚀 Features](#-features)
-- [🏗️ Project Structure](#️-project-structure)
+- [� Web Application](#-web-application)
+- [�🏗️ Project Structure](#️-project-structure)
 - [⚙️ Installation](#️-installation)
+- [🌐 Web Application](#-web-application)
 - [🔧 Quick Start](#-quick-start)
 - [📊 Data Loader Module](#-data-loader-module)
 - [🤖 GenAI Interface Module](#-genai-interface-module)
@@ -244,6 +246,14 @@ A comprehensive AI-powered project for providing clinical insights and assistanc
 - ✅ **Temporal Analysis** - Time-based data filtering and trends
 - ✅ **Statistical Insights** - Comprehensive summary statistics
 
+### 🌐 **Interactive Web Application**
+- ✅ **Streamlit-Based Interface** - Professional web UI for clinical data analysis
+- ✅ **Interactive Data Upload** - Drag & drop CSV file upload with real-time preview
+- ✅ **AI Agent Dashboard** - Monitor autonomous agent performance and status
+- ✅ **Real-Time Visualizations** - Plotly-powered charts and interactive graphs
+- ✅ **Analysis Configuration** - Customizable analysis goals and parameters
+- ✅ **Results Export** - Download analysis results and insights as JSON
+
 ### 🧪 **Testing & Quality**
 - ✅ **Synthetic Data Generation** - Realistic test data creation
 - ✅ **Comprehensive Testing** - Full unit and integration test coverage
@@ -267,14 +277,20 @@ clinical-insight-assistance/
 │   └── clinical_trial_data.csv # Generated synthetic clinical data
 ├── 📁 notebooks/              # Jupyter notebooks for analysis
 │   └── .gitkeep               # Keeps directory in version control
+├── 📁 sample_data/            # Sample datasets for testing
+│   └── clinical_trial_sample.csv # Sample clinical trial data
 ├── 📁 src/                    # Source code files
+│   ├── agent_core.py          # 🤖 Autonomous clinical analysis agent
 │   ├── data_loader.py         # 🔧 Core data loading and processing module
 │   ├── genai_interface.py     # 🤖 GenAI interface for AI-powered analysis
 │   ├── issue_detection.py    # 🔍 Clinical issue detection and monitoring
 │   ├── cohort_analysis.py     # 📈 Statistical cohort analysis and comparison
-│   └── scenario_simulation.py # 🎯 What-if scenario modeling and prediction
+│   ├── scenario_simulation.py # 🎯 What-if scenario modeling and prediction
+│   └── 📁 ui/                 # User Interface components
+│       └── streamlit_app.py   # 🌐 Interactive web application
 ├── 📁 tests/                  # Test files
 │   ├── .gitkeep               # Keeps directory in version control
+│   ├── test_agent.py          # 🤖 Autonomous agent unit tests (10 tests)
 │   ├── test_data_loader.py    # 🧪 Data loader unit tests (26 tests)
 │   ├── test_genai_interface.py # 🤖 GenAI interface unit tests (25 tests)
 │   ├── test_issue_detection.py # 🔍 Issue detection unit tests (43 tests)
@@ -283,6 +299,7 @@ clinical-insight-assistance/
 │   └── test_azure_integration.py # 🔗 Azure OpenAI integration tests (3 tests)
 ├── 📄 .env                    # Environment configuration (API keys, settings)
 ├── 📄 requirements.txt        # Project dependencies
+├── 📄 pytest.ini             # Test configuration for async support
 ├── 📄 .gitignore             # Git ignore rules
 └── 📄 README.md              # Project documentation
 ```
@@ -342,7 +359,97 @@ clinical-insight-assistance/
    OPENAI_API_KEY=your_openai_api_key_here
    ```
 
+## 🌐 Web Application
+
+### 🚀 **Launch the Interactive Streamlit Interface**
+
+The Clinical Insights Assistant includes a comprehensive web application that provides an intuitive interface for clinical data analysis and AI-powered insights.
+
+#### **🏃‍♂️ Quick Launch:**
+
+```bash
+# Launch the Streamlit web application
+streamlit run src/ui/streamlit_app.py
+
+# Or run it on a specific port
+streamlit run src/ui/streamlit_app.py --server.port 8501
+```
+
+The web application will be available at: **http://localhost:8501**
+
+#### **🎯 Web Application Features:**
+
+### 📊 **1. Data Upload & Analysis Page**
+- **📁 Interactive File Upload** - Drag & drop CSV files with real-time preview
+- **🔍 Data Validation** - Automatic data quality checks and validation
+- **📈 Quick Statistics** - Immediate data summary and basic statistics
+- **🗂️ Sample Data** - Pre-loaded clinical trial dataset for testing
+
+### 🤖 **2. AI Agent Dashboard**
+- **🎯 Analysis Goal Configuration** - Set custom analysis objectives
+- **▶️ Agent Execution** - Run autonomous clinical analysis workflows
+- **📊 Real-Time Progress** - Monitor agent execution with live updates
+- **💾 Results Management** - View, download, and manage analysis results
+
+### 📈 **3. Analytics & Insights**
+- **📊 Interactive Visualizations** - Plotly-powered charts and graphs
+- **🔬 Statistical Analysis** - Cohort comparisons and statistical tests
+- **⚠️ Issue Detection** - Automated clinical issue identification
+- **🎯 Scenario Modeling** - What-if analysis and predictions
+
+### ⚙️ **4. Settings & Configuration**
+- **🔧 Analysis Parameters** - Customize analysis thresholds and criteria
+- **🤖 AI Model Settings** - Configure OpenAI/Azure OpenAI parameters
+- **📊 Visualization Options** - Customize charts and display preferences
+- **💾 Export Settings** - Configure data export formats and options
+
+#### **💡 Usage Example:**
+
+```python
+# The Streamlit app automatically integrates with all core modules:
+# - ClinicalAgent for autonomous analysis
+# - GenAI Interface for AI-powered insights
+# - All analysis modules (cohort, issues, scenarios)
+# - Data visualization and export capabilities
+
+# Simply upload your clinical data CSV and let the AI agent analyze it!
+```
+
+#### **🎨 User Interface Highlights:**
+
+- **🎨 Professional Design** - Clean, intuitive interface with clinical focus
+- **📱 Responsive Layout** - Works on desktop, tablet, and mobile devices
+- **🔄 Real-Time Updates** - Live progress tracking and result updates
+- **💾 Export Ready** - Download results in JSON, CSV, and visualization formats
+- **🔐 Secure** - Local processing with secure API integration
+
+#### **🛠️ Development & Customization:**
+
+```bash
+# To modify the web application
+cd src/ui/
+nano streamlit_app.py
+
+# The app is structured with:
+# - Main navigation sidebar
+# - Four main pages (Upload, Agent, Analytics, Settings)
+# - Integrated data processing pipeline
+# - Real-time visualization components
+```
+
 ## 🔧 Quick Start
+
+### 🌐 **Launch the Web Application (Recommended)**
+
+```bash
+# Navigate to project directory
+cd clinical-insight-assistance
+
+# Launch the interactive Streamlit web interface
+streamlit run src/ui/streamlit_app.py
+
+# Access the application at: http://localhost:8501
+```
 
 ### 🚀 **Run the Data Loader Demo**
 
@@ -366,6 +473,27 @@ Total patients: 50
 Adverse events: 77 (11.0%)
 Mean compliance: 86.0%
 Mean outcome score: 82.9
+```
+
+### 🤖 **Run the Autonomous Agent**
+
+```bash
+# Test the autonomous clinical analysis agent
+.venv/bin/python -c "
+from src.agent_core import ClinicalAgent
+import asyncio
+
+async def test_agent():
+    agent = ClinicalAgent()
+    await agent.initialize()
+    
+    # Run analysis on sample data
+    result = await agent.analyze_data('sample_data/clinical_trial_sample.csv')
+    print('Agent Analysis Complete!')
+    print(f'Generated {len(result.insights)} insights')
+
+asyncio.run(test_agent())
+"
 ```
 
 ### 🤖 **Test GenAI Integration**
@@ -859,17 +987,19 @@ This module provides powerful predictive modeling capabilities, allowing clinica
 
 ### 🚀 **Run All Tests**
 
-#### **🧪 Complete Test Suite (173 Tests Total)**
+#### **🧪 Complete Test Suite (183 Tests Total)**
 ```bash
 # Run all tests with pytest
 .venv/bin/python -m pytest tests/ -v
 
 # Or run individual test suites
-.venv/bin/python tests/test_data_loader.py      # 26 tests
-.venv/bin/python tests/test_genai_interface.py  # 25 tests  
-.venv/bin/python tests/test_issue_detection.py  # 43 tests
-.venv/bin/python tests/test_cohort_analysis.py  # 42 tests
-.venv/bin/python tests/test_azure_integration.py # 3 tests
+.venv/bin/python tests/test_agent.py            # 10 tests - Autonomous Agent
+.venv/bin/python tests/test_data_loader.py      # 26 tests - Data Loading
+.venv/bin/python tests/test_genai_interface.py  # 25 tests - AI Integration
+.venv/bin/python tests/test_issue_detection.py  # 43 tests - Issue Detection
+.venv/bin/python tests/test_cohort_analysis.py  # 42 tests - Cohort Analysis
+.venv/bin/python tests/test_scenario_simulation.py # 34 tests - Scenarios
+.venv/bin/python tests/test_azure_integration.py # 3 tests - Azure OpenAI
 ```
 
 #### **📊 Individual Test Results:**
@@ -1546,6 +1676,51 @@ default_config = {
 
 ### 📝 **About The Author**
 Passionate about leveraging data science and AI to improve healthcare outcomes. Visit [The Data Arch](https://thedataarch.com/) for insights on data architecture, machine learning, and clinical analytics.
+
+---
+
+## 🎯 Platform Summary
+
+### 🚀 **Complete Clinical Intelligence Solution**
+
+The **Clinical Insights Assistant** is a comprehensive, production-ready platform that combines autonomous AI agents, advanced analytics, and an intuitive web interface to revolutionize clinical data analysis.
+
+#### **🔥 Key Capabilities:**
+
+- **🤖 Autonomous AI Agent** - Fully automated clinical data analysis with memory management
+- **🌐 Interactive Web Interface** - Professional Streamlit-based UI with 4 main pages
+- **📊 Advanced Analytics** - Statistical analysis, cohort comparisons, and predictive modeling
+- **🔍 Intelligent Issue Detection** - Automated adverse event detection and safety monitoring
+- **🎯 Scenario Simulation** - What-if analysis and treatment optimization
+- **🤖 Azure OpenAI Integration** - Enterprise-grade AI with EPAM proxy support
+- **🧪 Comprehensive Testing** - 183 tests ensuring reliability and accuracy
+- **📈 Interactive Visualizations** - Plotly-powered charts and real-time dashboards
+
+#### **✨ Production Features:**
+
+```
+✅ 6 Core Analysis Modules       ✅ Autonomous Agent Orchestration
+✅ Interactive Web Application   ✅ Comprehensive Test Coverage (183 tests)
+✅ Enterprise AI Integration     ✅ Professional Documentation
+✅ Real-time Visualizations     ✅ Sample Data & Examples
+✅ Export & Reporting           ✅ Scalable Architecture
+```
+
+#### **🎯 Perfect For:**
+
+- 🏥 **Clinical Research Teams** - Streamline clinical trial analysis
+- 📊 **Data Scientists** - Advanced statistical and predictive modeling
+- 🔬 **Pharmaceutical Companies** - Drug development and safety monitoring
+- 🏛️ **Regulatory Affairs** - Compliance reporting and FDA submissions
+- 🎓 **Academic Researchers** - Clinical data analysis and research
+
+#### **🚀 Get Started in 3 Steps:**
+
+1. **📥 Install**: `pip install -r requirements.txt`
+2. **🔑 Configure**: Set up your OpenAI API keys in `.env`
+3. **🌐 Launch**: `streamlit run src/ui/streamlit_app.py`
+
+**Ready to revolutionize your clinical data analysis?** 🚀
 
 ---
 
