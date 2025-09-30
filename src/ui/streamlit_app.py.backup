@@ -20,7 +20,7 @@ Step-by-Step Implementation:
 
 3. Implement the Main Application Layout:
    Use Streamlit containers and columns to structure the application.
-                            st.write(f"**Recommendations:** {issue.recommendation}")
+                            st.write(f"**Recommendations:** {', '.join(issue.recommendations)}")
             else:
                 st.success("No compliance issues detected")
                 
@@ -31,7 +31,7 @@ Step-by-Step Implementation:
         st.markdown("#### 🚨 Safety & Adverse Events")
         try:
             # Detect adverse events
-            ae_issues = detector.detect_adverse_event_patterns(data)
+            ae_issues = detector.detect_adverse_events(data)
             
             if ae_issues:
                 st.error(f"Found {len(ae_issues)} safety concerns")
@@ -44,10 +44,10 @@ Step-by-Step Implementation:
                             st.write(f"**Severity:** {issue.severity}")
                         with col2:
                             st.write(f"**Confidence:** {issue.confidence_score:.1%}")
-                            st.write(f"**Visit:** {issue.visit_number if hasattr(issue, "visit_number") and issue.visit_number else "N/A"}")
+                            st.write(f"**Visit:** {issue.visit_number}")
                         st.write(f"**Description:** {issue.description}")
-                        if issue.recommendation:
-                            st.write(f"**Recommendations:** {issue.recommendation}")
+                        if issue.recommendations:
+                            st.write(f"**Recommendations:** {', '.join(issue.recommendations)}")
             else:
                 st.success("No safety issues detected")
                 
@@ -71,10 +71,10 @@ Step-by-Step Implementation:
                             st.write(f"**Severity:** {issue.severity}")
                         with col2:
                             st.write(f"**Confidence:** {issue.confidence_score:.1%}")
-                            st.write(f"**Visit:** {issue.visit_number if hasattr(issue, "visit_number") and issue.visit_number else "N/A"}")
+                            st.write(f"**Visit:** {issue.visit_number}")
                         st.write(f"**Description:** {issue.description}")
-                        if issue.recommendation:
-                            st.write(f"**Recommendations:** {issue.recommendation}")
+                        if issue.recommendations:
+                            st.write(f"**Recommendations:** {', '.join(issue.recommendations)}")
             else:
                 st.success("No efficacy issues detected")
                 
@@ -915,66 +915,26 @@ def display_statistical_analysis(data: pd.DataFrame):
             if len(selected_cohorts) >= 2:
                 try:
                     # Perform cohort comparison
-                    comparison = analyzer.compare_cohorts(
-                        data, 'cohort', selected_cohorts[0], selected_cohorts[1]
-                    )
+                    cohort_a_data = data[data['cohort'] == selected_cohorts[0]]
+                    cohort_b_data = data[data['cohort'] == selected_cohorts[1]]
+                    
+                    comparison = analyzer.compare_cohorts(cohort_a_data, cohort_b_data)
                     
                     # Display comparison results
                     col1, col2, col3 = st.columns(3)
                     with col1:
-                        # Get p-value from outcome comparison (primary endpoint)
-                        outcome_test = comparison.statistical_tests.get('outcome_comparison', {})
-                        p_value = outcome_test.get('p_value', 'N/A')
-                        if p_value != 'N/A':
-                            st.metric("Statistical Significance", f"p-value: {p_value:.4f}")
-                        else:
-                            st.metric("Statistical Significance", "N/A")
+                        st.metric("Statistical Significance", 
+                                f"p-value: {comparison.statistical_significance:.4f}")
                     with col2:
-                        # Get effect size (Cohen's d for outcomes)
-                        effect_size = comparison.effect_sizes.get('outcome_cohens_d', 'N/A')
-                        if effect_size != 'N/A':
-                            st.metric("Effect Size (Cohen's d)", f"{effect_size:.3f}")
-                        else:
-                            st.metric("Effect Size", "N/A")
+                        st.metric("Effect Size", f"{comparison.effect_size:.3f}")
                     with col3:
                         st.metric("Confidence Level", f"{comparison.confidence_level:.1%}")
                     
-                    # Display detailed comparison results
-                    st.markdown("##### Detailed Comparison Results")
-                    
-                    # Statistical Tests Results
-                    if comparison.statistical_tests:
-                        st.markdown("###### Statistical Tests")
-                        tests_data = []
-                        for test_name, test_result in comparison.statistical_tests.items():
-                            if isinstance(test_result, dict):
-                                tests_data.append({
-                                    'Test': test_name.replace('_', ' ').title(),
-                                    'Test Type': test_result.get('test_name', 'N/A'),
-                                    'P-Value': f"{test_result.get('p_value', 0):.4f}",
-                                    'Significant': '✅' if test_result.get('significant', False) else '❌'
-                                })
-                        if tests_data:
-                            st.dataframe(pd.DataFrame(tests_data), use_container_width=True)
-                    
-                    # Effect Sizes
-                    if comparison.effect_sizes:
-                        st.markdown("###### Effect Sizes")
-                        effect_data = []
-                        for effect_name, effect_value in comparison.effect_sizes.items():
-                            if isinstance(effect_value, (int, float)):
-                                effect_data.append({
-                                    'Metric': effect_name.replace('_', ' ').title(),
-                                    'Value': f"{effect_value:.3f}"
-                                })
-                        if effect_data:
-                            st.dataframe(pd.DataFrame(effect_data), use_container_width=True)
-                    
-                    # Clinical Recommendations
-                    if comparison.recommendations:
-                        st.markdown("###### Clinical Recommendations")
-                        for i, rec in enumerate(comparison.recommendations, 1):
-                            st.write(f"{i}. {rec}")
+                    # Display detailed metrics
+                    if hasattr(comparison, 'metrics'):
+                        st.markdown("##### Detailed Metrics")
+                        metrics_df = pd.DataFrame([comparison.metrics])
+                        st.dataframe(metrics_df, use_container_width=True)
                     
                 except Exception as e:
                     st.error(f"Error in cohort analysis: {str(e)}")
@@ -1018,10 +978,10 @@ def display_pattern_detection(data: pd.DataFrame):
                             st.write(f"**Severity:** {issue.severity}")
                         with col2:
                             st.write(f"**Confidence:** {issue.confidence_score:.1%}")
-                            st.write(f"**Visit:** {issue.visit_number if hasattr(issue, "visit_number") and issue.visit_number else "N/A"}")
+                            st.write(f"**Visit:** {issue.visit_number}")
                         st.write(f"**Description:** {issue.description}")
-                        if issue.recommendation:
-                            st.write(f"**Recommendations:** {issue.recommendation}")
+                        if issue.recommendations:
+                            st.write(f"**Recommendations:** {', '.join(issue.recommendations)}")
             else:
                 st.success("No compliance issues detected")
                 
@@ -1032,7 +992,7 @@ def display_pattern_detection(data: pd.DataFrame):
         st.markdown("#### 🚨 Safety & Adverse Events")
         try:
             # Detect adverse events
-            ae_issues = detector.detect_adverse_event_patterns(data)
+            ae_issues = detector.detect_adverse_events(data)
             
             if ae_issues:
                 st.error(f"Found {len(ae_issues)} safety concerns")
@@ -1045,10 +1005,10 @@ def display_pattern_detection(data: pd.DataFrame):
                             st.write(f"**Severity:** {issue.severity}")
                         with col2:
                             st.write(f"**Confidence:** {issue.confidence_score:.1%}")
-                            st.write(f"**Visit:** {issue.visit_number if hasattr(issue, "visit_number") and issue.visit_number else "N/A"}")
+                            st.write(f"**Visit:** {issue.visit_number}")
                         st.write(f"**Description:** {issue.description}")
-                        if issue.recommendation:
-                            st.write(f"**Recommendations:** {issue.recommendation}")
+                        if issue.recommendations:
+                            st.write(f"**Recommendations:** {', '.join(issue.recommendations)}")
             else:
                 st.success("No safety issues detected")
                 
@@ -1072,10 +1032,10 @@ def display_pattern_detection(data: pd.DataFrame):
                             st.write(f"**Severity:** {issue.severity}")
                         with col2:
                             st.write(f"**Confidence:** {issue.confidence_score:.1%}")
-                            st.write(f"**Visit:** {issue.visit_number if hasattr(issue, "visit_number") and issue.visit_number else "N/A"}")
+                            st.write(f"**Visit:** {issue.visit_number}")
                         st.write(f"**Description:** {issue.description}")
-                        if issue.recommendation:
-                            st.write(f"**Recommendations:** {issue.recommendation}")
+                        if issue.recommendations:
+                            st.write(f"**Recommendations:** {', '.join(issue.recommendations)}")
             else:
                 st.success("No efficacy issues detected")
                 
@@ -1372,197 +1332,10 @@ def display_detailed_reports():
     selected_sections = st.multiselect("Select report sections:", report_sections, default=report_sections)
     
     if st.button("Generate Report"):
-        try:
-            # Initialize GenAI interface for report generation
-            genai = GenAIInterface()
-            
-            with st.spinner("Generating detailed reports..."):
-                for section in selected_sections:
-                    st.markdown(f"#### {section}")
-                    
-                    # Generate section-specific content based on analysis results
-                    if section == "Executive Summary":
-                        # Create executive summary from overall analysis
-                        # Format insights properly for Insight objects
-                        key_insights = []
-                        for insight in results.get('insights', [])[:5]:
-                            if hasattr(insight, 'title') and hasattr(insight, 'description'):
-                                key_insights.append(f"• {insight.title}: {insight.description}")
-                            else:
-                                key_insights.append(f"• {str(insight)}")
-                        
-                        exec_prompt = f"""
-                        Create an executive summary for this clinical trial analysis:
-                        
-                        Session ID: {results.get('session_id', 'N/A')}
-                        Total Insights: {len(results.get('insights', []))}
-                        Total Recommendations: {len(results.get('recommendations', []))}
-                        
-                        Key Insights:
-                        {chr(10).join(key_insights)}
-                        
-                        Key Recommendations:
-                        {chr(10).join([f"• {rec}" for rec in results.get('recommendations', [])[:5]])}
-                        
-                        Provide a concise executive summary suitable for senior management.
-                        """
-                        
-                        summary = genai.generate_insights(exec_prompt)
-                        st.write(summary)
-                    
-                    elif section == "Data Quality Assessment":
-                        # Generate data quality report
-                        quality_prompt = f"""
-                        Analyze the data quality based on this clinical trial analysis:
-                        
-                        Analysis Results Summary:
-                        - Session: {results.get('session_id', 'N/A')}
-                        - Metrics: {results.get('metrics', {})}
-                        - Analysis completed successfully with {len(results.get('analysis_results', []))} components
-                        
-                        Provide a comprehensive data quality assessment including:
-                        - Data completeness and integrity
-                        - Potential data issues identified
-                        - Recommendations for data quality improvement
-                        """
-                        
-                        quality_report = genai.generate_insights(quality_prompt)
-                        st.write(quality_report)
-                    
-                    elif section == "Cohort Analysis Results":
-                        # Generate cohort analysis summary
-                        # Format cohort-related insights
-                        cohort_insights = []
-                        for insight in results.get('insights', [])[:3]:
-                            if hasattr(insight, 'title') and hasattr(insight, 'description'):
-                                cohort_insights.append(f"• {insight.title}: {insight.description}")
-                            else:
-                                cohort_insights.append(f"• {str(insight)}")
-                        
-                        cohort_prompt = f"""
-                        Summarize cohort analysis findings from this clinical trial:
-                        
-                        Analysis Components: {len(results.get('analysis_results', []))}
-                        Key Insights: 
-                        {chr(10).join(cohort_insights)}
-                        
-                        Provide detailed cohort analysis results including:
-                        - Cohort characteristics and demographics
-                        - Statistical comparisons between groups
-                        - Clinical significance of findings
-                        """
-                        
-                        cohort_report = genai.generate_insights(cohort_prompt)
-                        st.write(cohort_report)
-                    
-                    elif section == "Safety Analysis":
-                        # Generate safety analysis report
-                        # Filter safety-related insights from Insight objects
-                        safety_insights = []
-                        for insight in results.get('insights', []):
-                            if hasattr(insight, 'tags') and any('safety' in tag.lower() for tag in insight.tags):
-                                safety_insights.append(f"• {insight.title}: {insight.description}")
-                            elif hasattr(insight, 'insight_type') and 'safety' in insight.insight_type.lower():
-                                safety_insights.append(f"• {insight.title}: {insight.description}")
-                            elif hasattr(insight, 'title') and ('safety' in insight.title.lower() or 'adverse' in insight.title.lower()):
-                                safety_insights.append(f"• {insight.title}: {insight.description}")
-                            elif hasattr(insight, 'description') and ('safety' in insight.description.lower() or 'adverse' in insight.description.lower()):
-                                safety_insights.append(f"• {insight.title}: {insight.description}")
-                        
-                        safety_prompt = f"""
-                        Create a safety analysis report based on clinical trial findings:
-                        
-                        Total Insights Generated: {len(results.get('insights', []))}
-                        Safety-related Insights:
-                        {chr(10).join(safety_insights)}
-                        
-                        Provide comprehensive safety analysis including:
-                        - Adverse event patterns and frequencies
-                        - Safety signal identification
-                        - Risk assessment and mitigation strategies
-                        """
-                        
-                        safety_report = genai.generate_insights(safety_prompt)
-                        st.write(safety_report)
-                    
-                    elif section == "Efficacy Analysis":
-                        # Generate efficacy analysis report
-                        # Filter efficacy-related insights from Insight objects
-                        efficacy_insights = []
-                        for insight in results.get('insights', []):
-                            if hasattr(insight, 'tags') and any(tag.lower() in ['efficacy', 'treatment', 'outcome'] for tag in insight.tags):
-                                efficacy_insights.append(f"• {insight.title}: {insight.description}")
-                            elif hasattr(insight, 'insight_type') and any(word in insight.insight_type.lower() for word in ['efficacy', 'treatment', 'outcome']):
-                                efficacy_insights.append(f"• {insight.title}: {insight.description}")
-                            elif hasattr(insight, 'title') and any(word in insight.title.lower() for word in ['efficacy', 'treatment', 'outcome']):
-                                efficacy_insights.append(f"• {insight.title}: {insight.description}")
-                            elif hasattr(insight, 'description') and any(word in insight.description.lower() for word in ['efficacy', 'treatment', 'outcome']):
-                                efficacy_insights.append(f"• {insight.title}: {insight.description}")
-                        
-                        efficacy_prompt = f"""
-                        Analyze treatment efficacy based on clinical trial results:
-                        
-                        Analysis Session: {results.get('session_id', 'N/A')}
-                        Efficacy-related Insights:
-                        {chr(10).join(efficacy_insights)}
-                        
-                        Provide detailed efficacy analysis including:
-                        - Primary and secondary endpoint results
-                        - Treatment response patterns
-                        - Clinical significance and implications
-                        """
-                        
-                        efficacy_report = genai.generate_insights(efficacy_prompt)
-                        st.write(efficacy_report)
-                    
-                    elif section == "Recommendations":
-                        # Display and enhance recommendations
-                        # Format insights properly for context
-                        insight_summaries = []
-                        for insight in results.get('insights', []):
-                            if hasattr(insight, 'title') and hasattr(insight, 'description'):
-                                insight_summaries.append(f"• {insight.title}: {insight.description}")
-                            else:
-                                insight_summaries.append(f"• {str(insight)}")
-                        
-                        rec_prompt = f"""
-                        Expand and contextualize these clinical trial recommendations:
-                        
-                        Generated Recommendations:
-                        {chr(10).join([f"• {rec}" for rec in results.get('recommendations', [])])}
-                        
-                        Based on Insights:
-                        {chr(10).join(insight_summaries)}
-                        
-                        Provide enhanced recommendations with:
-                        - Detailed implementation guidance
-                        - Priority levels and timelines
-                        - Risk considerations and mitigation
-                        """
-                        
-                        enhanced_recs = genai.generate_insights(rec_prompt)
-                        st.write(enhanced_recs)
-                    
-                    st.markdown("---")
-                    
-        except Exception as e:
-            st.error(f"Error generating reports: {str(e)}")
-            # Fallback to basic display
-            for section in selected_sections:
-                st.markdown(f"#### {section}")
-                if section == "Recommendations" and results.get('recommendations'):
-                    for i, rec in enumerate(results.get('recommendations', []), 1):
-                        st.write(f"{i}. {rec}")
-                elif section == "Executive Summary" and results.get('insights'):
-                    st.write("Key findings from analysis:")
-                    for insight in results.get('insights', [])[:5]:
-                        if hasattr(insight, 'title') and hasattr(insight, 'description'):
-                            st.write(f"• **{insight.title}**: {insight.description}")
-                        else:
-                            st.write(f"• {str(insight)}")
-                else:
-                    st.write(f"Analysis data available for {section}. Enable GenAI interface for detailed reports.")
-                st.markdown("---")
+        for section in selected_sections:
+            st.markdown(f"#### {section}")
+            st.write(f"Detailed analysis for {section} would appear here...")
+            st.markdown("---")
 
 def settings_page():
     """Application settings page."""

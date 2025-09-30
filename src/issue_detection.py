@@ -76,6 +76,7 @@ class IssueAlert:
     recommendation: str
     confidence_score: float
     metadata: Dict[str, Any]
+    visit_number: Optional[str] = None  # Visit identifier where issue was detected
 
 
 class IssueDetector:
@@ -323,7 +324,7 @@ class IssueDetector:
             
             # Create structured issue alert for clinical review
             issue = IssueAlert(
-                issue_type='compliance',
+issue_type='compliance',
                 severity=severity,
                 patient_id=patient_id,
                 description=f"Low patient compliance detected: {avg_compliance:.1f}% average compliance over {record_count} measurements",
@@ -336,7 +337,8 @@ class IssueDetector:
                     'record_count': record_count,
                     'threshold_used': thresholds,
                     'compliance_category': severity
-                }
+                },
+                visit_number=None
             )
             
             issues.append(issue)
@@ -618,6 +620,18 @@ class IssueDetector:
         
         logger.info(f"Adverse event pattern analysis completed - detected {len(issues)} safety concerns requiring attention")
         return issues
+    
+    def detect_adverse_events(self, data: pd.DataFrame) -> List[IssueAlert]:
+        """
+        Wrapper method for detect_adverse_event_patterns to maintain backward compatibility.
+        
+        Args:
+            data (pd.DataFrame): Clinical trial data.
+            
+        Returns:
+            List[IssueAlert]: List of adverse event issues.
+        """
+        return self.detect_adverse_event_patterns(data)
     
     def detect_statistical_outliers(self, data: pd.DataFrame) -> List[IssueAlert]:
         """

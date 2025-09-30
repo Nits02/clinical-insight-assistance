@@ -618,6 +618,54 @@ Structure your response as a comprehensive clinical insights report suitable for
             logger.error(f"Error generating clinical insights: {str(e)}")
             raise
     
+    def generate_insights(self, prompt: str) -> str:
+        """
+        Generate insights from any given text prompt using AI analysis.
+        
+        This is a general-purpose method for analyzing any clinical text and generating
+        insights, recommendations, and analysis. It's designed to be flexible and work
+        with various types of clinical documentation.
+        
+        Args:
+            prompt (str): The text prompt or clinical content to analyze.
+            
+        Returns:
+            str: AI-generated insights and analysis of the provided text.
+            
+        Raises:
+            Exception: If insight generation fails due to API errors.
+        """
+        try:
+            # Create a comprehensive analysis prompt
+            analysis_prompt = [
+                {
+                    "role": "system", 
+                    "content": """You are an expert clinical researcher and data analyst specializing in clinical trials and medical data analysis. 
+                    Your task is to analyze clinical text and provide comprehensive insights including:
+                    - Key findings and observations
+                    - Potential issues or concerns
+                    - Clinical recommendations
+                    - Risk assessments
+                    - Next steps or follow-up actions
+                    
+                    Provide structured, actionable insights that would be valuable for clinical teams and researchers."""
+                },
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ]
+            
+            # Generate insights using the API call
+            response = self._make_api_call(analysis_prompt)
+            
+            logger.info("Successfully generated insights from text analysis")
+            return response
+            
+        except Exception as e:
+            logger.error(f"Error generating insights: {str(e)}")
+            raise Exception(f"Failed to generate insights: {str(e)}")
+    
     def get_available_models(self) -> List[str]:
         """
         Get list of available models from the provider.

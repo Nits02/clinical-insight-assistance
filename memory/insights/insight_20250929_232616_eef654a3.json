@@ -1,0 +1,26 @@
+{
+  "insight_id": "test_001",
+  "insight_type": "test",
+  "title": "Test Insight",
+  "description": "This is a test insight about clinical data analysis",
+  "confidence_score": 0.95,
+  "clinical_significance": "medium",
+  "supporting_evidence": [
+    {
+      "test": "evidence"
+    }
+  ],
+  "recommendations": [
+    "Test recommendation"
+  ],
+  "created_at": "2025-09-29T23:26:16.703417",
+  "patient_ids": [
+    "P001"
+  ],
+  "cohorts": [
+    "Treatment_A"
+  ],
+  "tags": [
+    "test"
+  ]
+}

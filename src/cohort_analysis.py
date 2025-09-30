@@ -313,9 +313,9 @@ class CohortAnalyzer:
             stats_dict['adverse_events'] = {
                 'total_events': int(total_events),
                 'total_records': total_records,
-                'event_rate': float(total_events / total_records),
+                'event_rate': float(total_events / total_records) if total_records > 0 else 0.0,
                 'patients_with_events': int(cohort_data.groupby('patient_id')['adverse_event_flag'].max().sum()) if 'patient_id' in cohort_data.columns else int(total_events),
-                'patient_event_rate': float(cohort_data.groupby('patient_id')['adverse_event_flag'].max().mean()) if 'patient_id' in cohort_data.columns else float(total_events / total_records)
+                'patient_event_rate': float(cohort_data.groupby('patient_id')['adverse_event_flag'].max().mean()) if 'patient_id' in cohort_data.columns else (float(total_events / total_records) if total_records > 0 else 0.0)
             }
         
         # Dosage statistics - Treatment intensity analysis
@@ -340,7 +340,7 @@ class CohortAnalyzer:
                     'end': cohort_data['visit_date'].max().isoformat()
                 },
                 'duration_days': (cohort_data['visit_date'].max() - cohort_data['visit_date'].min()).days,
-                'visits_per_patient': float(len(cohort_data) / cohort_data['patient_id'].nunique()) if 'patient_id' in cohort_data.columns else 1
+                'visits_per_patient': float(len(cohort_data) / cohort_data['patient_id'].nunique()) if ('patient_id' in cohort_data.columns and cohort_data['patient_id'].nunique() > 0) else 1.0
             }
         
         return stats_dict
@@ -429,8 +429,8 @@ class CohortAnalyzer:
             contingency_table = np.array([[ae_a, n_a - ae_a], [ae_b, n_b - ae_b]])
             
             # Calculate additional safety metrics
-            rate_a = ae_a / n_a
-            rate_b = ae_b / n_b
+            rate_a = ae_a / n_a if n_a > 0 else 0.0
+            rate_b = ae_b / n_b if n_b > 0 else 0.0
             relative_risk = rate_a / rate_b if rate_b > 0 else float('inf')
             
             # Choose appropriate statistical test based on data
@@ -576,6 +576,10 @@ class CohortAnalyzer:
             return [0.0, 0.0]
         
         # Calculate standard error using Welch's formula (unequal variances)
+        # Handle case where sample sizes are zero
+        if len(sample_a) == 0 or len(sample_b) == 0:
+            return [float(mean_diff), float(mean_diff)]
+        
         se = np.sqrt(var_a/len(sample_a) + var_b/len(sample_b))
         
         # Handle case where standard error is zero

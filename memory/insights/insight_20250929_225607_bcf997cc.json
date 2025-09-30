@@ -1,0 +1,31 @@
+{
+  "insight_id": "COHORT_INSIGHT_20250929_225607",
+  "insight_type": "cohort_difference",
+  "title": "Significant Differences Between Cohorts",
+  "description": "Statistical analysis revealed 3 significant differences between treatment cohorts.",
+  "confidence_score": 0.85,
+  "clinical_significance": "high",
+  "supporting_evidence": [
+    {
+      "type": "cohort_comparison",
+      "data": {
+        "total_cohorts": 4,
+        "comparisons_performed": 6,
+        "significant_differences": 3
+      }
+    }
+  ],
+  "recommendations": [
+    "Investigate causes of cohort differences",
+    "Consider protocol modifications for underperforming cohorts",
+    "Analyze baseline characteristics for confounding factors"
+  ],
+  "created_at": "2025-09-29T22:56:07.488961",
+  "patient_ids": [],
+  "cohorts": [],
+  "tags": [
+    "cohorts",
+    "efficacy",
+    "comparison"
+  ]
+}

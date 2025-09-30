@@ -1,0 +1,40 @@
+{
+  "insight_id": "ISSUE_INSIGHT_20250930_111153",
+  "insight_type": "safety_concern",
+  "title": "Multiple Issues Detected in Trial Data",
+  "description": "Analysis identified 20 potential issues across compliance, safety, and efficacy domains.",
+  "confidence_score": 0.8,
+  "clinical_significance": "high",
+  "supporting_evidence": [
+    {
+      "type": "issue_summary",
+      "data": {
+        "total_issues_detected": 20,
+        "issue_types": [
+          "compliance_issues",
+          "safety_issues",
+          "efficacy_issues"
+        ],
+        "severity_distribution": {
+          "low": 0,
+          "medium": 1,
+          "high": 19
+        }
+      }
+    }
+  ],
+  "recommendations": [
+    "Conduct detailed review of identified issues",
+    "Implement targeted interventions for high-priority issues",
+    "Increase monitoring frequency for affected patients"
+  ],
+  "created_at": "2025-09-30T11:11:53.521070",
+  "patient_ids": [],
+  "cohorts": [],
+  "tags": [
+    "issues",
+    "safety",
+    "compliance",
+    "efficacy"
+  ]
+}

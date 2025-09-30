@@ -996,7 +996,11 @@ class ClinicalAgent:
                 continue
                 
             for issue in issues:
-                severity = issue.get('severity', 'medium')
+                # Handle both IssueAlert objects and dictionaries
+                if hasattr(issue, 'severity'):
+                    severity = issue.severity
+                else:
+                    severity = issue.get('severity', 'medium')
                 severity_counts[severity] = severity_counts.get(severity, 0) + 1
         
         return severity_counts
