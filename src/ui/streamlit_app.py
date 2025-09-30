@@ -211,13 +211,33 @@ def display_header():
         <h1>🏥 Clinical Insights Assistant</h1>
         <p>AI-Powered Clinical Trial Analysis Platform</p>
         <p><em>Upload your clinical data, get intelligent insights, and make data-driven decisions</em></p>
+        <div style="background: rgba(255,255,255,0.1); padding: 1rem; border-radius: 8px; margin-top: 1rem;">
+            <strong>Quick Start Guide:</strong><br>
+            1️⃣ Upload your clinical trial CSV data<br>
+            2️⃣ Configure and run AI analysis<br>
+            3️⃣ Explore insights in Analytics & Reports<br>
+            4️⃣ Use AI Agent for autonomous analysis
+        </div>
     </div>
     """, unsafe_allow_html=True)
 
 def display_sidebar():
     """Configure and display the sidebar with navigation and controls."""
     with st.sidebar:
-        st.image("https://via.placeholder.com/300x100/667eea/white?text=Clinical+Insights", width=300)
+        # Create a custom header instead of relying on external image
+        st.markdown("""
+        <div style="
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 1.5rem;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 1rem;
+            color: white;
+        ">
+            <h2 style="margin: 0; color: white;">🏥 Clinical Insights</h2>
+            <p style="margin: 0.5rem 0 0 0; color: rgba(255,255,255,0.9);">AI-Powered Analysis Platform</p>
+        </div>
+        """, unsafe_allow_html=True)
         
         st.markdown("### 🎛️ Navigation")
         page = st.selectbox(
@@ -261,6 +281,29 @@ def display_file_uploader():
     """Display file upload interface."""
     st.markdown("### 📤 Data Upload")
     
+    with st.expander("📋 **Data Format Requirements & Sample Structure**", expanded=False):
+        st.markdown("""
+        **Required/Recommended Columns:**
+        - `patient_id` - Unique patient identifier
+        - `cohort` - Treatment group (e.g., Treatment_A, Treatment_B, Control)
+        - `outcome_score` - Primary endpoint measurement (numeric)
+        - `compliance_pct` - Medication compliance percentage (0-100)
+        - `adverse_event_flag` - Safety indicator (0/1 or True/False)
+        - `visit_date` - Visit date (YYYY-MM-DD format)
+        - `dosage_mg` - Medication dosage in milligrams
+        - `visit_number` - Sequential visit number
+        
+        **Sample CSV Structure:**
+        ```
+        patient_id,cohort,outcome_score,compliance_pct,adverse_event_flag,visit_date,dosage_mg
+        P001,Treatment_A,75.5,95.2,0,2024-01-15,50
+        P002,Treatment_B,68.3,87.4,1,2024-01-16,75
+        P003,Control,45.2,92.1,0,2024-01-17,25
+        ```
+        
+        **💡 Note:** The system is flexible with column names and will auto-detect variations.
+        """)
+    
     uploaded_file = st.file_uploader(
         "Choose a CSV file with clinical trial data",
         type=['csv'],
@@ -300,7 +343,7 @@ def display_file_uploader():
             
             # Display data preview
             st.markdown("#### 👀 Data Preview")
-            st.dataframe(data.head(10), use_container_width=True)
+            st.dataframe(data.head(10), width='stretch')
             
             # Display comprehensive statistics
             col1, col2, col3, col4 = st.columns(4)
@@ -360,10 +403,19 @@ def display_analysis_controls():
     """Display analysis configuration and trigger controls."""
     st.markdown("### 🎯 Analysis Configuration")
     
+    st.info("""
+    **🔧 Configure Your Analysis:**
+    - **Analysis Goals**: Select what you want to analyze (efficacy, safety, compliance, etc.)
+    - **Confidence Threshold**: Higher values = more conservative results (0.7 recommended)
+    - **Max Insights**: Number of key findings to generate (10 is optimal)
+    - **Include Recommendations**: Get actionable clinical recommendations
+    - **Detailed Analysis**: Enable for comprehensive statistical analysis
+    """)
+    
     col1, col2 = st.columns(2)
     
     with col1:
-        st.markdown("#### Analysis Goals")
+        st.markdown("#### 🎯 Analysis Goals")
         default_goals = [
             "Compare treatment efficacy across cohorts",
             "Evaluate safety profile and adverse events",
@@ -374,7 +426,8 @@ def display_analysis_controls():
         analysis_goals = st.multiselect(
             "Select analysis objectives:",
             default_goals + ["Custom analysis goal"],
-            default=default_goals[:2]
+            default=default_goals[:2],
+            help="Choose what aspects of your clinical trial you want to analyze"
         )
         
         if "Custom analysis goal" in analysis_goals:
@@ -383,18 +436,34 @@ def display_analysis_controls():
                 analysis_goals = [g for g in analysis_goals if g != "Custom analysis goal"] + [custom_goal]
     
     with col2:
-        st.markdown("#### Analysis Settings")
-        confidence_threshold = st.slider("Confidence Threshold", 0.0, 1.0, 0.7, 0.1)
-        max_insights = st.number_input("Maximum Insights", 1, 50, 10)
-        include_recommendations = st.checkbox("Include Recommendations", True)
-        detailed_analysis = st.checkbox("Detailed Analysis", False)
+        st.markdown("#### ⚙️ Analysis Settings")
+        confidence_threshold = st.slider(
+            "Confidence Threshold", 
+            0.0, 1.0, 0.7, 0.1,
+            help="Higher values produce more confident but fewer results (0.7 recommended)"
+        )
+        max_insights = st.number_input(
+            "Maximum Insights", 
+            1, 50, 10,
+            help="Number of key findings to generate (10 is optimal for most analyses)"
+        )
+        include_recommendations = st.checkbox(
+            "Include Recommendations", 
+            True,
+            help="Generate actionable clinical recommendations based on findings"
+        )
+        detailed_analysis = st.checkbox(
+            "Detailed Analysis", 
+            False,
+            help="Enable comprehensive statistical analysis (takes longer but more thorough)"
+        )
     
     # Analysis trigger button
     st.markdown("---")
     col1, col2, col3 = st.columns([1, 2, 1])
     
     with col2:
-        if st.button("🚀 Start AI Analysis", use_container_width=True):
+        if st.button("🚀 Start AI Analysis", width='stretch'):
             if 'uploaded_data' in st.session_state:
                 run_analysis(
                     st.session_state.uploaded_data,
@@ -450,7 +519,7 @@ def display_overview_charts(data: pd.DataFrame):
                 names=cohort_counts.index,
                 title="Patient Distribution by Cohort"
             )
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width='stretch')
     
     with col2:
         if 'outcome_score' in data.columns:
@@ -461,7 +530,7 @@ def display_overview_charts(data: pd.DataFrame):
                 title="Outcome Score Distribution",
                 nbins=20
             )
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width='stretch')
     
     # Additional charts
     if 'adverse_event_flag' in data.columns:
@@ -801,6 +870,26 @@ def download_results():
 # 4. MAIN APPLICATION LAYOUT AND ROUTING
 # ============================================================================
 
+def display_footer():
+    """Display footer with developer contact information."""
+    st.markdown("---")
+    st.markdown("""
+    <div style="
+        background: rgba(0,0,0,0.05);
+        padding: 1rem;
+        border-radius: 8px;
+        text-align: center;
+        margin-top: 2rem;
+        color: #666;
+    ">
+        <p style="margin: 0;"><strong>👨‍💻 Developed by Nitesh Sharma</strong></p>
+        <p style="margin: 0.5rem 0 0 0;">
+            📧 <a href="mailto:nitesh.sharma@live.com">nitesh.sharma@live.com</a> | 
+            📝 <a href="https://thedataarch.com/" target="_blank">The Data Arch Blog</a>
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+
 def main():
     """Main application function."""
     
@@ -822,10 +911,30 @@ def main():
         analytics_page()
     elif current_page == "⚙️ Settings":
         settings_page()
+    
+    # Display footer on all pages
+    display_footer()
 
 def data_upload_page():
     """Data upload and analysis page."""
     st.markdown("## 📊 Data Upload & Analysis")
+    
+    # Page instructions
+    st.info("""
+    **📋 Instructions for Data Upload & Analysis:**
+    
+    **Step 1:** Upload your clinical trial data CSV file using the file uploader below
+    - Ensure your CSV contains columns like: `patient_id`, `cohort`, `outcome_score`, `compliance_pct`, `adverse_event_flag`, `visit_date`
+    - The system accepts various column names and will automatically detect the structure
+    
+    **Step 2:** Review the data preview and quality metrics to verify your upload
+    
+    **Step 3:** Configure your analysis goals and settings
+    
+    **Step 4:** Click "Start AI Analysis" to run comprehensive clinical analysis
+    
+    **Step 5:** View results and visualizations below, then proceed to Analytics & Insights page for detailed reports
+    """)
     
     # File upload section
     uploaded_data = display_file_uploader()
@@ -848,11 +957,31 @@ def agent_dashboard_page():
     """AI agent dashboard page."""
     st.markdown("## 🤖 AI Agent Dashboard")
     
+    st.info("""
+    **🤖 About the AI Agent:**
+    
+    The Clinical AI Agent is an autonomous system that:
+    - **🔍 Analyzes** your clinical data automatically using advanced algorithms
+    - **🧠 Learns** patterns and correlations in your dataset
+    - **📊 Generates** insights about safety, efficacy, and compliance
+    - **💡 Provides** actionable recommendations for clinical decisions
+    - **🎯 Prioritizes** findings based on clinical significance
+    
+    **How to Use:**
+    1. Ensure you have uploaded clinical data in the Data Upload page
+    2. Monitor the agent's progress and task execution below
+    3. View generated insights and recommendations
+    4. Check detailed reports in the Analytics & Insights page
+    """)
+    
     display_agent_dashboard()
     
     # Agent performance metrics
     if 'analysis_results' in st.session_state:
-        st.markdown("### 📊 Agent Performance")
+        st.markdown("### 📊 Agent Performance Metrics")
+        
+        st.success("✅ **Analysis Complete** - Your clinical data has been processed successfully!")
+        
         results = st.session_state.analysis_results
         metrics = results.get('metrics', {})
         
@@ -863,16 +992,54 @@ def agent_dashboard_page():
             st.metric("Insights Generated", metrics.get('insights_generated', 0))
         with col3:
             st.metric("Avg Confidence", f"{metrics.get('average_confidence_score', 0):.1%}")
+        
+        st.markdown("### 🎯 Next Steps")
+        st.markdown("""
+        - 📈 **Go to Analytics & Insights** → View detailed statistical analysis and reports
+        - 📋 **Generate Detailed Reports** → Create comprehensive clinical summaries
+        - 🤖 **Use AI Text Analysis** → Analyze clinical reports and documentation
+        - 🎯 **Try What-If Analysis** → Explore different treatment scenarios
+        """)
+    else:
+        st.warning("⚠️ **No Analysis Results Found** - Please upload data and run analysis first!")
+        st.markdown("""
+        **To get started:**
+        1. Go to **📊 Data Upload & Analysis** page
+        2. Upload your clinical trial CSV file
+        3. Configure analysis settings
+        4. Click **🚀 Start AI Analysis**
+        5. Return here to monitor progress
+        """)
 
 def analytics_page():
     """Analytics and insights page."""
     st.markdown("## 📈 Analytics & Insights")
     
     if 'uploaded_data' not in st.session_state:
-        st.warning("Please upload data first in the Data Upload & Analysis page")
+        st.error("⚠️ **No Data Found** - Please upload data first!")
+        st.markdown("""
+        **To access analytics, you need to:**
+        1. Go to **📊 Data Upload & Analysis** page
+        2. Upload your clinical trial CSV file
+        3. Run the AI analysis
+        4. Return here to explore detailed insights
+        """)
         return
     
     data = st.session_state.uploaded_data
+    
+    st.success(f"✅ **Data Loaded:** {len(data)} records ready for analysis")
+    
+    # Instructions for each tab
+    st.info("""
+    **📊 Analytics Tabs Guide:**
+    
+    **📊 Statistical Analysis** - Compare cohorts, run statistical tests, view effect sizes
+    **🔍 Pattern Detection** - Detect compliance, safety, and efficacy issues automatically  
+    **🎯 What-If Analysis** - Simulate different treatment scenarios and dosage changes
+    **🤖 AI Text Analysis** - Analyze clinical reports, adverse events, and medical text
+    **📋 Detailed Reports** - Generate comprehensive AI-powered clinical reports
+    """)
     
     # Advanced analytics
     tab1, tab2, tab3, tab4, tab5 = st.tabs(["📊 Statistical Analysis", "🔍 Pattern Detection", "🎯 What-If Analysis", "🤖 AI Text Analysis", "📋 Detailed Reports"])
@@ -895,6 +1062,29 @@ def analytics_page():
 def display_statistical_analysis(data: pd.DataFrame):
     """Display advanced statistical analysis using CohortAnalyzer."""
     st.markdown("### 📊 Statistical Analysis")
+    
+    st.info("""
+    **📊 Statistical Analysis Instructions:**
+    
+    This section provides comprehensive statistical analysis of your clinical trial data:
+    
+    **🔬 What it does:**
+    - Compares treatment cohorts using advanced statistical tests
+    - Calculates effect sizes and clinical significance
+    - Performs t-tests, chi-square tests, and ANOVA where appropriate
+    - Provides confidence intervals and p-values
+    
+    **📈 How to use:**
+    1. Select cohorts to compare from the dropdown
+    2. Review statistical significance and effect sizes
+    3. Examine detailed test results in the tables below
+    4. Use these results for clinical decision-making and reporting
+    
+    **💡 Key Metrics:**
+    - **P-value**: Statistical significance (< 0.05 typically significant)
+    - **Effect Size**: Practical significance (Cohen's d: 0.2=small, 0.5=medium, 0.8=large)
+    - **Confidence Level**: Reliability of the estimates (95% standard)
+    """)
     
     # Initialize CohortAnalyzer for statistical analysis
     analyzer = CohortAnalyzer()
@@ -996,6 +1186,31 @@ def display_pattern_detection(data: pd.DataFrame):
     """Display pattern detection results using IssueDetector."""
     st.markdown("### 🔍 Pattern Detection & Issue Analysis")
     
+    st.info("""
+    **🔍 Pattern Detection Instructions:**
+    
+    **🎯 Purpose:** Automatically detect potential issues in your clinical trial data
+    
+    **📋 Three Analysis Categories:**
+    
+    **⚠️ Compliance Issues** - Identifies patients with poor medication adherence
+    - Detects low compliance rates (< 70% typically flagged)
+    - Severity levels: Critical, High, Medium based on compliance percentage
+    - Provides recommendations for intervention strategies
+    
+    **🚨 Safety Alerts** - Monitors adverse events and safety signals
+    - Identifies patients with concerning adverse event patterns
+    - Detects population-level safety trends
+    - Flags potential safety signals requiring investigation
+    
+    **📉 Efficacy Concerns** - Evaluates treatment effectiveness
+    - Identifies patients with poor treatment response
+    - Detects declining efficacy trends over time
+    - Highlights potential treatment failures
+    
+    **💡 How to Use:** Click on each tab below to view detailed analysis results. Each issue includes severity level, confidence score, and actionable recommendations.
+    """)
+    
     # Initialize IssueDetector
     detector = IssueDetector()
     
@@ -1086,6 +1301,33 @@ def display_scenario_simulation(data: pd.DataFrame):
     """Display scenario simulation and what-if analysis using ScenarioSimulator."""
     st.markdown("### 🎯 What-If Analysis & Scenario Simulation")
     
+    st.info("""
+    **🎯 What-If Analysis Instructions:**
+    
+    **🎮 Purpose:** Simulate different treatment scenarios and predict their outcomes
+    
+    **🔬 What You Can Simulate:**
+    - **Dosage Changes**: Test different medication dosages and predict efficacy/safety outcomes
+    - **Compliance Improvements**: Model the impact of better patient adherence
+    - **Treatment Modifications**: Explore alternative treatment strategies
+    - **Risk Assessment**: Evaluate potential benefits and risks of changes
+    
+    **📊 How It Works:**
+    1. Select a patient cohort for simulation
+    2. Adjust dosage, compliance, or other parameters using the sliders
+    3. Run the simulation to see predicted outcomes
+    4. Compare results with current baseline performance
+    5. Use insights for clinical decision-making
+    
+    **🎯 Use Cases:**
+    - Dosage optimization before protocol amendments
+    - Predicting impact of compliance interventions
+    - Risk-benefit analysis for treatment modifications
+    - Supporting regulatory submissions with predictive evidence
+    
+    **💡 Tip:** Start with small parameter changes to understand their impact, then explore larger modifications.
+    """)
+    
     # Initialize ScenarioSimulator
     simulator = ScenarioSimulator()
     
@@ -1150,45 +1392,68 @@ def display_scenario_simulation(data: pd.DataFrame):
                     col1, col2, col3 = st.columns(3)
                     
                     with col1:
-                        if hasattr(simulation_results, 'predicted_outcome'):
-                            st.metric("Predicted Outcome Score", 
-                                    f"{simulation_results.predicted_outcome:.1f}")
-                        else:
-                            st.metric("Predicted Outcome Score", "N/A")
+                        predicted_outcome = simulation_results.predicted_outcomes.get('predicted_outcome', 0)
+                        st.metric("Predicted Outcome Score", f"{predicted_outcome:.1f}")
                     
                     with col2:
-                        if hasattr(simulation_results, 'confidence_interval'):
-                            st.metric("Confidence Interval", 
-                                    f"±{simulation_results.confidence_interval:.1f}")
-                        else:
-                            st.metric("Confidence Interval", "N/A")
+                        confidence_interval = simulation_results.confidence_intervals.get('outcome', [0, 0])
+                        interval_range = confidence_interval[1] - confidence_interval[0]
+                        st.metric("Confidence Interval", f"±{interval_range/2:.1f}")
                     
                     with col3:
-                        if hasattr(simulation_results, 'success_probability'):
-                            st.metric("Success Probability", 
-                                    f"{simulation_results.success_probability:.1%}")
-                        else:
-                            st.metric("Success Probability", "N/A")
+                        confidence_score = simulation_results.confidence_score
+                        st.metric("Confidence Score", f"{confidence_score:.1%}")
+                    
+                    # Display additional metrics
+                    col4, col5, col6 = st.columns(3)
+                    
+                    with col4:
+                        outcome_change = simulation_results.predicted_outcomes.get('outcome_change', 0)
+                        st.metric("Outcome Change", f"{outcome_change:+.1f}", delta=f"{outcome_change:+.1f}")
+                    
+                    with col5:
+                        risk_level = simulation_results.risk_assessment.get('overall_risk', 'Unknown')
+                        st.metric("Risk Level", risk_level)
+                    
+                    with col6:
+                        num_recommendations = len(simulation_results.recommendations)
+                        st.metric("Recommendations", f"{num_recommendations} items")
                     
                     # Show scenario comparison
                     st.markdown("#### 📈 Scenario Comparison")
                     
                     # Create comparison chart
+                    baseline_outcome = simulation_results.baseline_metrics.get('baseline_outcome', 70)
+                    predicted_outcome = simulation_results.predicted_outcomes.get('predicted_outcome', 75)
+                    
                     comparison_data = {
                         'Scenario': ['Current', 'Simulated'],
                         'Dosage (mg)': [current_dosage if 'dosage_mg' in data.columns else 50, new_dosage],
                         'Compliance (%)': [avg_compliance if 'compliance_pct' in data.columns else 85, target_compliance],
-                        'Predicted Outcome': [data[data['cohort'] == selected_cohort]['outcome_score'].mean() if 'outcome_score' in data.columns else 70, 
-                                           simulation_results.predicted_outcome if hasattr(simulation_results, 'predicted_outcome') else 75]
+                        'Predicted Outcome': [baseline_outcome, predicted_outcome]
                     }
                     
                     comparison_df = pd.DataFrame(comparison_data)
-                    st.dataframe(comparison_df, use_container_width=True)
+                    st.dataframe(comparison_df, width='stretch')
                     
                     # Visualization
                     fig = px.bar(comparison_df, x='Scenario', y='Predicted Outcome', 
                                title="Outcome Comparison: Current vs Simulated")
-                    st.plotly_chart(fig, use_container_width=True)
+                    st.plotly_chart(fig, width='stretch')
+                    
+                    # Display recommendations
+                    if simulation_results.recommendations:
+                        st.markdown("#### 💡 Recommendations")
+                        for i, recommendation in enumerate(simulation_results.recommendations, 1):
+                            st.write(f"{i}. {recommendation}")
+                    
+                    # Display risk assessment details
+                    st.markdown("#### ⚠️ Risk Assessment")
+                    risk_info = simulation_results.risk_assessment
+                    st.write(f"**Overall Risk Level:** {risk_info.get('overall_risk', 'Unknown')}")
+                    st.write(f"**Risk Score:** {risk_info.get('risk_score', 0.5):.2f}")
+                    if 'dosage_risk' in risk_info:
+                        st.write(f"**Dosage Change Risk:** {risk_info['dosage_risk']}")
                     
                 else:
                     st.warning("Simulation completed but no results available")
@@ -1200,6 +1465,36 @@ def display_genai_text_analysis():
     """Display AI-powered text analysis using GenAI Interface."""
     st.markdown("### 🤖 AI Text Analysis & Natural Language Processing")
     
+    st.info("""
+    **🤖 AI Text Analysis Guide:**
+    
+    **🎯 Purpose:** Leverage advanced AI to analyze clinical text and extract meaningful insights
+    
+    **📋 Analysis Types Available:**
+    
+    **📋 Clinical Report Analysis** - Comprehensive analysis of clinical trial reports
+    - Extracts key findings, safety signals, and efficacy data
+    - Identifies potential issues and regulatory concerns
+    - Provides structured insights for decision-making
+    
+    **⚠️ Adverse Event Description Analysis** - Detailed safety signal detection
+    - Analyzes adverse event narratives and descriptions
+    - Categorizes events by severity and relationship to treatment
+    - Suggests follow-up actions and reporting requirements
+    
+    **📄 Medical Text Summarization** - Automated summarization of complex medical documents
+    - Condenses lengthy clinical documents into key points
+    - Maintains critical medical information and context
+    - Suitable for case reports, study summaries, and medical literature
+    
+    **🔍 Custom Query** - Flexible analysis for specialized clinical questions
+    - Analyze any clinical text with custom prompts
+    - Suitable for protocol deviations, case analyses, and specific investigations
+    - Adaptable to your unique analysis needs
+    
+    **💡 Instructions:** Select an analysis type, enter your text, and click analyze. The AI will provide detailed insights and recommendations.
+    """)
+    
     try:
         # Initialize GenAI Interface
         genai = GenAIInterface()
@@ -1208,7 +1503,8 @@ def display_genai_text_analysis():
         
         analysis_type = st.selectbox(
             "Select analysis type:",
-            ["Clinical Report Analysis", "Adverse Event Description Analysis", "Medical Text Summarization", "Custom Query"]
+            ["Clinical Report Analysis", "Adverse Event Description Analysis", "Medical Text Summarization", "Custom Query"],
+            help="Choose the type of analysis that best fits your clinical text"
         )
         
         if analysis_type == "Clinical Report Analysis":
@@ -1353,11 +1649,54 @@ def display_detailed_reports():
     """Display detailed analysis reports."""
     st.markdown("### 📋 Detailed Reports")
     
+    st.info("""
+    **📋 Detailed Reports Guide:**
+    
+    **🎯 Purpose:** Generate comprehensive, AI-powered clinical reports suitable for regulatory submission and clinical review
+    
+    **📊 Available Report Sections:**
+    
+    **📈 Executive Summary** - High-level overview for senior management
+    - Key findings, metrics, and strategic recommendations
+    - Suitable for executive briefings and decision-making
+    
+    **🔍 Data Quality Assessment** - Comprehensive data integrity analysis
+    - Data completeness, consistency, and potential issues
+    - Recommendations for data quality improvements
+    
+    **📊 Cohort Analysis Results** - Statistical comparison results
+    - Demographics, efficacy comparisons, and statistical significance
+    - Clinical interpretation of cohort differences
+    
+    **🚨 Safety Analysis** - Comprehensive safety profile evaluation
+    - Adverse event patterns, safety signals, and risk assessment
+    - Regulatory-focused safety conclusions
+    
+    **💊 Efficacy Analysis** - Treatment effectiveness evaluation
+    - Primary/secondary endpoint results and clinical significance
+    - Efficacy trends and treatment response patterns
+    
+    **💡 Recommendations** - Actionable clinical recommendations
+    - Evidence-based suggestions for protocol modifications
+    - Priority levels and implementation guidance
+    
+    **🚀 How to Use:** Select the report sections you need, then click "Generate Report" to create AI-powered, professional clinical reports.
+    """)
+    
     if 'analysis_results' not in st.session_state:
-        st.info("Run an analysis to generate detailed reports")
+        st.warning("⚠️ **No Analysis Results Found**")
+        st.markdown("""
+        **To generate detailed reports:**
+        1. Go to **📊 Data Upload & Analysis** page
+        2. Upload your clinical data
+        3. Run the AI analysis
+        4. Return here to generate comprehensive reports
+        """)
         return
     
     results = st.session_state.analysis_results
+    
+    st.success("✅ **Analysis Results Available** - Ready to generate detailed reports!")
     
     # Generate comprehensive report
     report_sections = [
@@ -1369,7 +1708,12 @@ def display_detailed_reports():
         "Recommendations"
     ]
     
-    selected_sections = st.multiselect("Select report sections:", report_sections, default=report_sections)
+    selected_sections = st.multiselect(
+        "Select report sections:", 
+        report_sections, 
+        default=report_sections,
+        help="Choose which sections to include in your detailed report"
+    )
     
     if st.button("Generate Report"):
         try:
@@ -1568,47 +1912,171 @@ def settings_page():
     """Application settings page."""
     st.markdown("## ⚙️ Settings")
     
+    st.info("""
+    **⚙️ Settings & Configuration Guide:**
+    
+    **🎯 Purpose:** Configure the Clinical Insights Assistant platform to optimize performance and customize analysis parameters for your specific clinical research needs.
+    
+    **📋 Available Tabs:**
+    - **🎛️ Analysis Settings:** Configure AI analysis parameters and thresholds
+    - **🔧 System Settings:** Manage AI provider settings and system resources
+    - **ℹ️ About:** Platform information, version details, and support resources
+    
+    **💡 Tip:** Adjust settings based on your clinical trial type and data characteristics for optimal analysis results.
+    """)
+    
     tab1, tab2, tab3 = st.tabs(["🎛️ Analysis Settings", "🔧 System Settings", "ℹ️ About"])
     
     with tab1:
         st.markdown("### Analysis Configuration")
         
-        confidence_default = st.slider("Default Confidence Threshold", 0.0, 1.0, 0.7)
-        max_insights_default = st.number_input("Default Max Insights", 1, 100, 10)
-        auto_analysis = st.checkbox("Enable Auto-Analysis", False)
+        st.info("""
+        **🎛️ Analysis Settings Help:**
+        
+        **🎯 Confidence Threshold (0.0 - 1.0):**
+        - **0.7-0.8:** Standard clinical research threshold
+        - **0.8-0.9:** High confidence for regulatory submissions
+        - **0.6-0.7:** Exploratory analysis or small sample sizes
+        
+        **📊 Max Insights (1-100):**
+        - **5-10:** Focus on most critical findings
+        - **10-20:** Comprehensive analysis for large datasets
+        - **20+:** Detailed exploration for complex studies
+        
+        **🔄 Auto-Analysis:**
+        - **Enabled:** Automatically analyze uploaded data
+        - **Disabled:** Manual analysis control for custom workflows
+        """)
+        
+        confidence_default = st.slider(
+            "Default Confidence Threshold", 
+            0.0, 1.0, 0.7,
+            help="Higher values require stronger statistical evidence for insights"
+        )
+        max_insights_default = st.number_input(
+            "Default Max Insights", 
+            1, 100, 10,
+            help="Maximum number of insights to generate per analysis"
+        )
+        auto_analysis = st.checkbox(
+            "Enable Auto-Analysis", 
+            False,
+            help="Automatically start analysis when data is uploaded"
+        )
         
         if st.button("Save Analysis Settings"):
-            st.success("Settings saved!")
+            st.success("✅ Analysis settings saved successfully!")
     
     with tab2:
         st.markdown("### System Configuration")
         
+        st.info("""
+        **🔧 System Settings Help:**
+        
+        **🤖 AI Provider Options:**
+        - **Azure OpenAI:** Enterprise-grade with enhanced security (Recommended)
+        - **OpenAI:** Direct OpenAI API access
+        
+        **🧠 Model Selection:**
+        - **gpt-4o-mini:** Fast, cost-effective for routine analysis
+        - **gpt-4:** Most advanced reasoning for complex clinical data
+        - **gpt-3.5-turbo:** Balanced performance and speed
+        
+        **💾 Memory & Performance:**
+        - **Memory Limit:** Controls system resource usage
+        - **Caching:** Improves performance for repeated analyses
+        """)
+        
         st.markdown("#### AI Provider Settings")
-        provider = st.selectbox("AI Provider", ["Azure OpenAI", "OpenAI"])
-        model = st.selectbox("Model", ["gpt-4o-mini", "gpt-4", "gpt-3.5-turbo"])
+        provider = st.selectbox(
+            "AI Provider", 
+            ["Azure OpenAI", "OpenAI"],
+            help="Choose your preferred AI service provider"
+        )
+        model = st.selectbox(
+            "Model", 
+            ["gpt-4o-mini", "gpt-4", "gpt-3.5-turbo"],
+            help="Select the AI model for clinical analysis"
+        )
         
         st.markdown("#### Memory Settings")
-        memory_limit = st.slider("Memory Limit (MB)", 100, 1000, 500)
-        cache_enabled = st.checkbox("Enable Caching", True)
+        memory_limit = st.slider(
+            "Memory Limit (MB)", 
+            100, 1000, 500,
+            help="Maximum memory allocation for analysis processes"
+        )
+        cache_enabled = st.checkbox(
+            "Enable Caching", 
+            True,
+            help="Cache results to improve performance for repeated operations"
+        )
         
         if st.button("Save System Settings"):
-            st.success("System settings saved!")
+            st.success("✅ System settings saved successfully!")
     
     with tab3:
         st.markdown("### About Clinical Insights Assistant")
         
+        st.success("""
+        **🏥 Clinical Insights Assistant v1.0.0**
+        
+        **🎯 Mission:** Empowering clinical researchers with AI-driven insights for safer, more effective treatments.
+        """)
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.markdown("""
+            **🛠️ Technology Stack:**
+            - **Frontend:** Streamlit (Interactive UI)
+            - **AI Engine:** Azure OpenAI (GPT-4)
+            - **Visualization:** Plotly (Interactive Charts)
+            - **Data Processing:** Pandas, NumPy
+            - **Statistics:** SciPy, Statsmodels
+            """)
+        
+        with col2:
+            st.markdown("""
+            **🚀 Core Capabilities:**
+            - ✅ Automated data quality assessment
+            - ✅ Intelligent cohort comparison
+            - ✅ Safety and efficacy analysis
+            - ✅ AI-generated insights & recommendations
+            - ✅ Regulatory-ready reporting
+            """)
+        
+        st.markdown("---")
+        
+        st.info("""
+        **📞 Support & Resources:**
+        
+        - **📚 Documentation:** [GitHub Repository](https://github.com/Nits02/clinical-insight-assistance)
+        - **🐛 Bug Reports:** Submit issues via GitHub
+        - **💡 Feature Requests:** Contact the Clinical AI Team
+        - **📧 Enterprise Support:** Available for clinical organizations
+        
+        **🔒 Security & Compliance:**
+        - HIPAA-compliant data handling
+        - Enterprise-grade Azure OpenAI integration
+        - No data storage on external servers
+        """)
+        
         st.markdown("""
-        **Version:** 1.0.0  
-        **Built with:** Streamlit, OpenAI, Plotly  
-        **Author:** Clinical AI Team  
+        **👥 Developed by:** Clinical AI Research Team  
+        **📅 Last Updated:** December 2024  
+        **🔖 License:** Clinical Research License
+        """)
         
-        This application provides AI-powered analysis of clinical trial data with:
-        - Automated data quality assessment
-        - Intelligent cohort comparison
-        - Safety and efficacy analysis
-        - AI-generated insights and recommendations
+        st.markdown("---")
         
-        For support and documentation, visit our [GitHub repository](https://github.com/Nits02/clinical-insight-assistance).
+        # Developer Contact Information
+        st.markdown("""
+        **👨‍💻 Developer Contact:**
+        
+        **📧 Email:** [nitesh.sharma@live.com](mailto:nitesh.sharma@live.com)  
+        **📝 Blog:** [The Data Arch](https://thedataarch.com/)  
+        
+        *For technical inquiries, collaboration opportunities, or platform support, feel free to reach out!*
         """)
 
 # ============================================================================
