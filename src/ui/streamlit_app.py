@@ -130,6 +130,51 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # ============================================================================
+# DEVELOPER DEBUG HELPER FUNCTION
+# ============================================================================
+
+def show_debug_info(module_name: str, class_name: str = None, method_name: str = None, description: str = None):
+    """
+    Display developer debug information showing which code components are being called.
+    
+    Args:
+        module_name (str): Name of the Python module/file
+        class_name (str, optional): Name of the class being used
+        method_name (str, optional): Name of the method being called
+        description (str, optional): Brief description of what's happening
+    """
+    debug_parts = []
+    
+    if module_name:
+        debug_parts.append(f"📁 **{module_name}**")
+    
+    if class_name:
+        debug_parts.append(f"🏗️ **{class_name}**")
+    
+    if method_name:
+        debug_parts.append(f"⚙️ **{method_name}()**")
+    
+    if description:
+        debug_parts.append(f"💡 *{description}*")
+    
+    debug_text = " → ".join(debug_parts)
+    
+    st.markdown(f"""
+    <div style="
+        background: linear-gradient(90deg, #f8f9fa 0%, #e9ecef 100%);
+        border-left: 4px solid #6c757d;
+        padding: 8px 12px;
+        margin: 4px 0;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        color: #495057;
+        font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    ">
+        🔧 <strong>Dev Info:</strong> {debug_text}
+    </div>
+    """, unsafe_allow_html=True)
+
+# ============================================================================
 # 1. STREAMLIT PAGE CONFIGURATION AND SETUP
 # ============================================================================
 
@@ -312,9 +357,15 @@ def display_file_uploader():
     
     if uploaded_file is not None:
         try:
+            # Show debug info for file upload process
+            show_debug_info("data_loader.py", "ClinicalDataLoader", "__init__", "Initializing data loader for file processing")
+            
             # Initialize ClinicalDataLoader for advanced data processing
             from data_loader import ClinicalDataLoader
             loader = ClinicalDataLoader()
+            
+            # Show debug info for data reading
+            show_debug_info("pandas", "pd", "read_csv", "Reading CSV file into DataFrame")
             
             # Read the uploaded file
             data = pd.read_csv(uploaded_file)
@@ -718,7 +769,12 @@ def display_agent_dashboard():
     # Initialize agent if not exists
     if 'agent' not in st.session_state:
         with st.spinner("Initializing AI Agent..."):
+            # Show debug info for agent initialization
+            show_debug_info("agent_core.py", "ClinicalAgent", "__init__", "Creating AI agent instance for dashboard")
             st.session_state.agent = ClinicalAgent()
+    
+    # Show debug info for status retrieval
+    show_debug_info("agent_core.py", "ClinicalAgent", "get_agent_status", "Retrieving current agent status and metrics")
     
     agent = st.session_state.agent
     status = agent.get_agent_status()
@@ -777,6 +833,9 @@ def run_analysis(data: pd.DataFrame, goals: List[str], confidence_threshold: flo
                 max_insights: int, include_recommendations: bool, detailed_analysis: bool):
     """Run comprehensive AI analysis on the uploaded data."""
     
+    # Show debug info for analysis initialization
+    show_debug_info("agent_core.py", "ClinicalAgent", "__init__", "Initializing clinical AI agent for analysis")
+    
     progress_bar = st.progress(0)
     status_text = st.empty()
     
@@ -793,6 +852,9 @@ def run_analysis(data: pd.DataFrame, goals: List[str], confidence_threshold: flo
         # Run analysis
         status_text.text("Running AI analysis...")
         progress_bar.progress(30)
+        
+        # Show debug info for main analysis
+        show_debug_info("agent_core.py", "ClinicalAgent", "analyze_trial_data", "Running comprehensive AI analysis on clinical data")
         
         # This needs to be run in an async context
         async def run_async_analysis():
@@ -1086,6 +1148,9 @@ def display_statistical_analysis(data: pd.DataFrame):
     - **Confidence Level**: Reliability of the estimates (95% standard)
     """)
     
+    # Show debug info for statistical analysis
+    show_debug_info("cohort_analysis.py", "CohortAnalyzer", "__init__", "Initializing statistical analysis engine")
+    
     # Initialize CohortAnalyzer for statistical analysis
     analyzer = CohortAnalyzer()
     
@@ -1104,6 +1169,9 @@ def display_statistical_analysis(data: pd.DataFrame):
             
             if len(selected_cohorts) >= 2:
                 try:
+                    # Show debug info for cohort comparison
+                    show_debug_info("cohort_analysis.py", "CohortAnalyzer", "compare_cohorts", f"Comparing cohorts: {selected_cohorts}")
+                    
                     # Perform cohort comparison
                     comparison = analyzer.compare_cohorts(
                         data, 'cohort', selected_cohorts[0], selected_cohorts[1]
@@ -1211,6 +1279,9 @@ def display_pattern_detection(data: pd.DataFrame):
     **💡 How to Use:** Click on each tab below to view detailed analysis results. Each issue includes severity level, confidence score, and actionable recommendations.
     """)
     
+    # Show debug info for issue detection
+    show_debug_info("issue_detection.py", "IssueDetector", "__init__", "Initializing pattern detection and issue analysis")
+    
     # Initialize IssueDetector
     detector = IssueDetector()
     
@@ -1219,6 +1290,9 @@ def display_pattern_detection(data: pd.DataFrame):
     with tab1:
         st.markdown("#### 💊 Compliance Analysis")
         try:
+            # Show debug info for compliance detection
+            show_debug_info("issue_detection.py", "IssueDetector", "detect_compliance_issues", "Analyzing patient compliance patterns")
+            
             # Detect compliance issues
             compliance_issues = detector.detect_compliance_issues(data)
             
@@ -1328,6 +1402,9 @@ def display_scenario_simulation(data: pd.DataFrame):
     **💡 Tip:** Start with small parameter changes to understand their impact, then explore larger modifications.
     """)
     
+    # Show debug info for scenario simulator initialization
+    show_debug_info("scenario_simulation.py", "ScenarioSimulator", "__init__", "Initializing clinical scenario simulation engine")
+    
     # Initialize ScenarioSimulator
     simulator = ScenarioSimulator()
     
@@ -1374,6 +1451,9 @@ def display_scenario_simulation(data: pd.DataFrame):
     if st.button("🚀 Run Scenario Simulation"):
         try:
             with st.spinner("Running scenario simulation..."):
+                # Show debug info for scenario simulation
+                show_debug_info("scenario_simulation.py", "ScenarioSimulator", "simulate_outcome_scenarios", "Running what-if analysis and outcome prediction")
+                
                 # Create scenario parameters
                 scenario_params = {
                     'cohort': selected_cohort,
@@ -1496,6 +1576,9 @@ def display_genai_text_analysis():
     """)
     
     try:
+        # Show debug info for GenAI initialization
+        show_debug_info("genai_interface.py", "GenAIInterface", "__init__", "Initializing AI text analysis interface")
+        
         # Initialize GenAI Interface
         genai = GenAIInterface()
         
@@ -1629,6 +1712,9 @@ def display_genai_text_analysis():
                 if 'analysis_results' in st.session_state:
                     with st.spinner("Generating AI-powered report..."):
                         try:
+                            # Show debug info for report generation
+                            show_debug_info("genai_interface.py", "GenAIInterface", "generate_insights", "Generating AI-powered clinical analysis report")
+                            
                             results = st.session_state.analysis_results
                             results_summary = str(results)[:1000]  # Limit length
                             prompt = f"Create a comprehensive clinical analysis report based on these results:\n\n{results_summary}"
