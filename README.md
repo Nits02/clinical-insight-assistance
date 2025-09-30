@@ -11,6 +11,9 @@
 [![Scenario Simulation](https://img.shields.io/badge/Simulation-What--If%20Modeling-orange.svg)](src/scenario_simulation.py)
 [![Streamlit](https://img.shields.io/badge/UI-Streamlit%20App-FF4B4B.svg)](src/ui/streamlit_app.py)
 [![Reports](https://img.shields.io/badge/Reports-AI%20Generated-00D4AA.svg)](#-recent-updates--enhancements)
+[![Docker](https://img.shields.io/badge/Docker-Containerized-2496ED.svg)](Dockerfile)
+[![Deploy](https://img.shields.io/badge/Deploy-One%20Click-brightgreen.svg)](docker-compose.yml)
+[![CI/CD](https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-2088FF.svg)](.github/workflows/ci-cd.yml)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 A comprehensive AI-powered project for providing clinical insights and assistance through advanced data processing, analysis, and GenAI-powered recommendations for clinical trial data.
@@ -204,6 +207,7 @@ A comprehensive AI-powered project for providing clinical insights and assistanc
 - [� Web Application](#-web-application)
 - [�🏗️ Project Structure](#️-project-structure)
 - [⚙️ Installation](#️-installation)
+- [🐳 Docker Deployment](#-docker-deployment)
 - [🌐 Web Application](#-web-application)
 - [🔧 Quick Start](#-quick-start)
 - [📊 Data Loader Module](#-data-loader-module)
@@ -497,7 +501,149 @@ nano streamlit_app.py
 # - Real-time visualization components
 ```
 
-## 🔧 Quick Start
+## � Docker Deployment
+
+The Clinical Insights Assistant is fully containerized and ready for production deployment using Docker.
+
+### 🚀 **Quick Deploy with Docker Compose (Recommended)**
+
+```bash
+# Clone the repository
+git clone https://github.com/Nits02/clinical-insight-assistance.git
+cd clinical-insight-assistance
+
+# Configure environment variables
+cp .env.example .env
+# Edit .env with your OpenAI/Azure OpenAI credentials
+
+# Deploy with one command
+docker-compose up -d
+
+# Access the application
+open http://localhost:8501
+```
+
+### 🛠️ **Manual Docker Deployment**
+
+```bash
+# Build the Docker image
+docker build -t clinical-insights-assistant .
+
+# Run the container
+docker run -d \
+  --name clinical-insights-app \
+  -p 8501:8501 \
+  --env-file .env \
+  -v $(pwd)/data:/app/data \
+  -v $(pwd)/memory:/app/memory \
+  clinical-insights-assistant
+
+# Check application health
+curl http://localhost:8501/_stcore/health
+```
+
+### 📋 **Management Script**
+
+Use the included deployment script for easy management:
+
+```bash
+# Make script executable
+chmod +x deploy.sh
+
+# Available commands
+./deploy.sh start      # Start the application
+./deploy.sh stop       # Stop the application
+./deploy.sh restart    # Restart the application
+./deploy.sh logs       # View application logs
+./deploy.sh status     # Check status and metrics
+./deploy.sh backup     # Create data backup
+./deploy.sh update     # Update and redeploy
+./deploy.sh cleanup    # Clean up containers and images
+```
+
+### 🌐 **Production Deployment**
+
+#### **Cloud Platforms:**
+
+**AWS ECS/Fargate:**
+```bash
+# Push to ECR and deploy
+aws ecr create-repository --repository-name clinical-insights-assistant
+docker tag clinical-insights-assistant:latest your-account.dkr.ecr.region.amazonaws.com/clinical-insights-assistant:latest
+docker push your-account.dkr.ecr.region.amazonaws.com/clinical-insights-assistant:latest
+```
+
+**Google Cloud Run:**
+```bash
+gcloud builds submit --tag gcr.io/your-project/clinical-insights-assistant
+gcloud run deploy --image gcr.io/your-project/clinical-insights-assistant --platform managed
+```
+
+**🚀 Azure Cloud (Recommended):**
+```bash
+# Automated Azure deployment (quickest)
+./deploy-azure.sh apps
+
+# Or see detailed guide for manual deployment
+```
+📖 **Full Azure Deployment Guide**: [AZURE_DEPLOYMENT.md](./AZURE_DEPLOYMENT.md)
+- Multiple deployment options (Container Instances, Container Apps, App Service, AKS)
+- Automated deployment scripts
+- Production-ready configurations
+- Monitoring and scaling setup
+
+### 🔧 **Environment Configuration**
+
+Required environment variables for deployment:
+
+```bash
+# AI Provider Configuration
+AZURE_OPENAI_API_KEY=your_azure_api_key
+AZURE_OPENAI_ENDPOINT=https://your-endpoint.openai.azure.com
+AZURE_OPENAI_DEPLOYMENT_NAME=gpt-4o-mini-2024-07-18
+OPENAI_PROVIDER=azure
+
+# Application Configuration
+STREAMLIT_SERVER_PORT=8501
+STREAMLIT_SERVER_ADDRESS=0.0.0.0
+PYTHONPATH=/app/src:/app
+```
+
+### 📊 **Resource Requirements**
+
+**Minimum Requirements:**
+- CPU: 1 vCPU
+- RAM: 2GB
+- Storage: 10GB
+- Network: HTTP/HTTPS access
+
+**Recommended for Production:**
+- CPU: 2 vCPUs
+- RAM: 4GB
+- Storage: 50GB
+- Load Balancer: For high availability
+
+### 🔍 **Health Monitoring**
+
+```bash
+# Built-in health check endpoint
+curl http://localhost:8501/_stcore/health
+
+# Monitor container metrics
+docker stats clinical-insights-app
+
+# View application logs
+docker logs -f clinical-insights-app
+```
+
+### 📚 **Additional Resources**
+
+- **[DEPLOYMENT.md](DEPLOYMENT.md)** - Comprehensive deployment guide
+- **[docker-compose.yml](docker-compose.yml)** - Complete Docker Compose configuration
+- **[.env.example](.env.example)** - Environment variable template
+- **[GitHub Actions](.github/workflows/ci-cd.yml)** - CI/CD pipeline configuration
+
+## �🔧 Quick Start
 
 ### 🌐 **Launch the Web Application (Recommended)**
 
