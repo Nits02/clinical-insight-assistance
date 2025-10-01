@@ -44,7 +44,8 @@ Step-by-Step Implementation:
                             st.write(f"**Severity:** {issue.severity}")
                         with col2:
                             st.write(f"**Confidence:** {issue.confidence_score:.1%}")
-                            st.write(f"**Visit:** {issue.visit_number if hasattr(issue, "visit_number") and issue.visit_number else "N/A"}")
+                            visit_num = issue.visit_number if hasattr(issue, 'visit_number') and issue.visit_number else "N/A"
+                            st.write(f"**Visit:** {visit_num}")
                         st.write(f"**Description:** {issue.description}")
                         if issue.recommendation:
                             st.write(f"**Recommendations:** {issue.recommendation}")
@@ -71,7 +72,8 @@ Step-by-Step Implementation:
                             st.write(f"**Severity:** {issue.severity}")
                         with col2:
                             st.write(f"**Confidence:** {issue.confidence_score:.1%}")
-                            st.write(f"**Visit:** {issue.visit_number if hasattr(issue, "visit_number") and issue.visit_number else "N/A"}")
+                            visit_num = issue.visit_number if hasattr(issue, 'visit_number') and issue.visit_number else "N/A"
+                            st.write(f"**Visit:** {visit_num}")
                         st.write(f"**Description:** {issue.description}")
                         if issue.recommendation:
                             st.write(f"**Recommendations:** {issue.recommendation}")
@@ -1307,7 +1309,8 @@ def display_pattern_detection(data: pd.DataFrame):
                             st.write(f"**Severity:** {issue.severity}")
                         with col2:
                             st.write(f"**Confidence:** {issue.confidence_score:.1%}")
-                            st.write(f"**Visit:** {issue.visit_number if hasattr(issue, "visit_number") and issue.visit_number else "N/A"}")
+                            visit_num = issue.visit_number if hasattr(issue, 'visit_number') and issue.visit_number else "N/A"
+                            st.write(f"**Visit:** {visit_num}")
                         st.write(f"**Description:** {issue.description}")
                         if issue.recommendation:
                             st.write(f"**Recommendations:** {issue.recommendation}")
@@ -1334,7 +1337,8 @@ def display_pattern_detection(data: pd.DataFrame):
                             st.write(f"**Severity:** {issue.severity}")
                         with col2:
                             st.write(f"**Confidence:** {issue.confidence_score:.1%}")
-                            st.write(f"**Visit:** {issue.visit_number if hasattr(issue, "visit_number") and issue.visit_number else "N/A"}")
+                            visit_num = issue.visit_number if hasattr(issue, 'visit_number') and issue.visit_number else "N/A"
+                            st.write(f"**Visit:** {visit_num}")
                         st.write(f"**Description:** {issue.description}")
                         if issue.recommendation:
                             st.write(f"**Recommendations:** {issue.recommendation}")
@@ -1361,7 +1365,8 @@ def display_pattern_detection(data: pd.DataFrame):
                             st.write(f"**Severity:** {issue.severity}")
                         with col2:
                             st.write(f"**Confidence:** {issue.confidence_score:.1%}")
-                            st.write(f"**Visit:** {issue.visit_number if hasattr(issue, "visit_number") and issue.visit_number else "N/A"}")
+                            visit_num = issue.visit_number if hasattr(issue, 'visit_number') and issue.visit_number else "N/A"
+                            st.write(f"**Visit:** {visit_num}")
                         st.write(f"**Description:** {issue.description}")
                         if issue.recommendation:
                             st.write(f"**Recommendations:** {issue.recommendation}")

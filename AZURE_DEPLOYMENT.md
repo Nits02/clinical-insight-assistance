@@ -54,7 +54,216 @@ To remove all Azure resources:
 
 ---
 
-## 📚 **DETAILED MANUAL DEPLOYMENT** (For Advanced Users)
+## � **REAL-WORLD DEPLOYMENT WALKTHROUGH** (Step-by-Step)
+
+This section documents the actual commands and steps used for a successful deployment, including troubleshooting fixes.
+
+### **Step 1: Prerequisites Verification**
+```bash
+# Check Azure CLI version
+az --version
+
+# Check Docker installation
+docker --version
+
+# Verify Azure login status
+az account show
+
+# Start Docker if not running (macOS)
+open -a Docker
+
+# Wait for Docker to start
+sleep 15 && docker info > /dev/null 2>&1 && echo "Docker is now running"
+```
+
+### **Step 2: Upgrade Azure CLI (Recommended)**
+```bash
+# Upgrade to latest version for best compatibility
+az upgrade --yes
+```
+
+### **Step 3: Create Resource Group and Container Registry**
+```bash
+# Set variables (replace with your values)
+RESOURCE_GROUP="clinical-insights-rg"
+LOCATION="eastus"
+ACR_NAME="clinicalinsights$(date +%s)"
+
+# Create resource group
+az group create --name $RESOURCE_GROUP --location $LOCATION
+
+# Create Azure Container Registry
+az acr create \
+    --resource-group $RESOURCE_GROUP \
+    --name $ACR_NAME \
+    --sku Basic \
+    --admin-enabled true
+
+# Get ACR details
+ACR_LOGIN_SERVER=$(az acr show --name $ACR_NAME --resource-group $RESOURCE_GROUP --query "loginServer" --output tsv)
+ACR_USERNAME=$(az acr credential show --name $ACR_NAME --query "username" --output tsv)
+ACR_PASSWORD=$(az acr credential show --name $ACR_NAME --query "passwords[0].value" --output tsv)
+```
+
+### **Step 4: Build and Push Container Image**
+```bash
+# Login to Azure Container Registry
+az acr login --name $ACR_NAME
+
+# Build image with correct platform for Azure Container Apps
+docker build --platform linux/amd64 -t $ACR_LOGIN_SERVER/clinical-insights-assistant:latest .
+
+# Push image to registry
+docker push $ACR_LOGIN_SERVER/clinical-insights-assistant:latest
+```
+
+### **Step 5: Setup Key Vault for Secrets**
+```bash
+# Create Key Vault
+KEYVAULT_NAME="clinical-kv-$(date +%s)"
+az keyvault create \
+    --name $KEYVAULT_NAME \
+    --resource-group $RESOURCE_GROUP \
+    --location $LOCATION
+
+# Assign Key Vault Secrets Officer role to current user
+az role assignment create \
+    --role "Key Vault Secrets Officer" \
+    --assignee $(az account show --query "user.name" --output tsv) \
+    --scope "/subscriptions/$(az account show --query "id" --output tsv)/resourceGroups/$RESOURCE_GROUP/providers/Microsoft.KeyVault/vaults/$KEYVAULT_NAME"
+
+# Wait for role assignment to propagate
+sleep 30
+
+# Store secrets in Key Vault
+az keyvault secret set --vault-name $KEYVAULT_NAME --name "azure-openai-api-key" --value "YOUR_ACTUAL_API_KEY"
+az keyvault secret set --vault-name $KEYVAULT_NAME --name "azure-openai-endpoint" --value "https://ai-proxy.lab.epam.com"
+az keyvault secret set --vault-name $KEYVAULT_NAME --name "azure-openai-deployment" --value "gpt-4o-mini-2024-07-18"
+```
+
+### **Step 6: Setup Container Apps Environment**
+```bash
+# Install Container Apps extension
+az extension add --name containerapp --upgrade
+
+# Register providers
+az provider register --namespace Microsoft.App
+az provider register --namespace Microsoft.OperationalInsights
+
+# Create Log Analytics workspace
+WORKSPACE_NAME="clinical-logs-$(date +%s)"
+az monitor log-analytics workspace create \
+    --resource-group $RESOURCE_GROUP \
+    --workspace-name $WORKSPACE_NAME
+
+# Get workspace details
+WORKSPACE_ID=$(az monitor log-analytics workspace show --query customerId --resource-group $RESOURCE_GROUP --workspace-name $WORKSPACE_NAME --output tsv)
+WORKSPACE_KEY=$(az monitor log-analytics workspace get-shared-keys --query primarySharedKey --resource-group $RESOURCE_GROUP --workspace-name $WORKSPACE_NAME --output tsv)
+
+# Create Container Apps environment
+az containerapp env create \
+    --name clinical-env \
+    --resource-group $RESOURCE_GROUP \
+    --logs-workspace-id $WORKSPACE_ID \
+    --logs-workspace-key $WORKSPACE_KEY \
+    --location $LOCATION
+```
+
+### **Step 7: Deploy Container App**
+```bash
+# Create Container App
+az containerapp create \
+    --name clinical-insights-containerapp \
+    --resource-group $RESOURCE_GROUP \
+    --environment clinical-env \
+    --image $ACR_LOGIN_SERVER/clinical-insights-assistant:latest \
+    --registry-server $ACR_LOGIN_SERVER \
+    --registry-username $ACR_USERNAME \
+    --registry-password $ACR_PASSWORD \
+    --target-port 8501 \
+    --ingress external \
+    --cpu 2.0 \
+    --memory 4.0Gi \
+    --min-replicas 1 \
+    --max-replicas 3 \
+    --env-vars \
+        STREAMLIT_SERVER_PORT=8501 \
+        STREAMLIT_SERVER_ADDRESS=0.0.0.0 \
+        PYTHONPATH=/app/src:/app \
+        OPENAI_PROVIDER=azure \
+        AZURE_OPENAI_API_KEY=YOUR_ACTUAL_API_KEY \
+        AZURE_OPENAI_ENDPOINT=https://ai-proxy.lab.epam.com \
+        AZURE_OPENAI_DEPLOYMENT_NAME=gpt-4o-mini-2024-07-18
+```
+
+### **Step 8: Verify Deployment**
+```bash
+# Get the application URL
+APP_URL=$(az containerapp show \
+    --name clinical-insights-containerapp \
+    --resource-group $RESOURCE_GROUP \
+    --query properties.configuration.ingress.fqdn \
+    --output tsv)
+
+echo "Application URL: https://$APP_URL"
+
+# Test the application
+curl -s -o /dev/null -w "%{http_code}" https://$APP_URL/
+curl -s -I https://$APP_URL/_stcore/health
+
+# Check container logs
+az containerapp logs show --name clinical-insights-containerapp --resource-group $RESOURCE_GROUP --tail 10
+```
+
+### **🚨 Common Issues and Fixes**
+
+#### **Issue 1: F-string Syntax Errors**
+**Problem**: `SyntaxError: f-string: unmatched '('`
+**Solution**: Fix nested quotes in f-strings
+```python
+# BROKEN:
+st.write(f"**Visit:** {issue.visit_number if hasattr(issue, "visit_number") and issue.visit_number else "N/A"}")
+
+# FIXED:
+visit_num = issue.visit_number if hasattr(issue, 'visit_number') and issue.visit_number else "N/A"
+st.write(f"**Visit:** {visit_num}")
+```
+
+#### **Issue 2: Key Vault Permission Denied**
+**Problem**: `Caller is not authorized to perform action`
+**Solution**: Assign proper RBAC role
+```bash
+az role assignment create \
+    --role "Key Vault Secrets Officer" \
+    --assignee $(az account show --query "user.name" --output tsv) \
+    --scope "/subscriptions/$(az account show --query "id" --output tsv)/resourceGroups/$RESOURCE_GROUP/providers/Microsoft.KeyVault/vaults/$KEYVAULT_NAME"
+```
+
+#### **Issue 3: Container Platform Mismatch**
+**Problem**: `no child with platform linux/amd64`
+**Solution**: Build with correct platform
+```bash
+docker build --platform linux/amd64 -t $ACR_LOGIN_SERVER/clinical-insights-assistant:latest .
+```
+
+#### **Issue 4: Cached Container Image**
+**Problem**: Old image still running after updates
+**Solution**: Delete and recreate container app
+```bash
+az containerapp delete --name clinical-insights-containerapp --resource-group $RESOURCE_GROUP --yes
+# Then recreate with updated image
+```
+
+### **💡 Pro Tips**
+1. **Always use `--platform linux/amd64`** when building for Azure Container Apps
+2. **Wait 30 seconds** after RBAC role assignments before using Key Vault
+3. **Check container logs** if the app doesn't start: `az containerapp logs show`
+4. **Use environment variables** instead of hardcoded secrets
+5. **Monitor costs** with Azure Cost Management
+
+---
+
+## �📚 **DETAILED MANUAL DEPLOYMENT** (For Advanced Users)
 
 If you prefer manual control or want to understand each step, continue with the detailed instructions below.
 
@@ -677,10 +886,58 @@ az container show \
 
 ---
 
-## 🎉 **SUMMARY**
+## � **SUCCESSFUL DEPLOYMENT EXAMPLE**
+
+Here's a real example of a successful deployment completed on October 1, 2025:
+
+### **Final Deployment Results**
+```bash
+# Successful deployment output
+Container app created. Access your app at https://clinical-insights-containerapp.ashyground-84f0e362.eastus.azurecontainerapps.io/
+
+# Resource Summary:
+Resource Group: clinical-insights-rg
+Location: East US
+Container Registry: clinicalinsights1759285118.azurecr.io
+Key Vault: clinical-kv-1759285305
+Container App: clinical-insights-containerapp
+Environment: clinical-env
+```
+
+### **Verification Tests**
+```bash
+# Health check passed ✅
+$ curl -s -o /dev/null -w "%{http_code}" https://clinical-insights-containerapp.ashyground-84f0e362.eastus.azurecontainerapps.io/
+200
+
+# Streamlit health endpoint passed ✅
+$ curl -s -I https://clinical-insights-containerapp.ashyground-84f0e362.eastus.azurecontainerapps.io/_stcore/health
+HTTP/2 200 
+server: TornadoServer/6.5.2
+content-type: text/html; charset=UTF-8
+
+# Container logs show successful startup ✅
+{"Log": "F   You can now view your Streamlit app in your browser."}
+{"Log": "F   URL: http://0.0.0.0:8501"}
+```
+
+### **Total Deployment Time**: ~15 minutes
+### **Total Resources Created**: 5 Azure resources
+### **Application Status**: ✅ **LIVE AND FUNCTIONAL**
+
+---
+
+## �🎉 **SUMMARY**
 
 **For Quick Deployment:** Use the automated script at the top of this guide
-**For Custom Deployment:** Follow the detailed manual instructions
+**For Custom Deployment:** Follow the detailed manual instructions  
+**For Real-World Experience:** Follow the step-by-step walkthrough above
 **For Production:** Consider Container Apps or App Service with monitoring
 
 Your Clinical Insights Assistant is now ready for production deployment on Azure! 🚀
+
+### **🔗 Quick Links**
+- **Live Example**: https://clinical-insights-containerapp.ashyground-84f0e362.eastus.azurecontainerapps.io/
+- **Azure Portal**: https://portal.azure.com/
+- **Container Apps Documentation**: https://docs.microsoft.com/azure/container-apps/
+- **Troubleshooting**: See the "Common Issues and Fixes" section above
