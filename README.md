@@ -368,6 +368,461 @@ clinical-insight-assistance/
 └── 📄 README.md              # Project documentation
 ```
 
+## 🕷️ **Complete System Architecture & Entity Relationship Diagram**
+
+### **🎯 Application Entry Points & Flow**
+
+```mermaid
+graph TB
+    %% Entry Points
+    START[🚀 Application Start] --> ENTRY_CHOICE{Entry Point?}
+    ENTRY_CHOICE -->|Streamlit UI| STREAMLIT[streamlit_app.py::main]
+    ENTRY_CHOICE -->|Direct Module| MODULE_MAIN[module::main]
+    ENTRY_CHOICE -->|Agent Core| AGENT_MAIN[agent_core.py::main]
+    
+    %% Streamlit Application Flow
+    STREAMLIT --> CONFIG[configure_page]
+    CONFIG --> HEADER[display_header]
+    HEADER --> SIDEBAR[display_sidebar]
+    SIDEBAR --> PAGE_ROUTER{Page Router}
+    
+    PAGE_ROUTER -->|📊 Data Upload| DATA_PAGE[data_upload_page]
+    PAGE_ROUTER -->|🤖 AI Agent| AGENT_PAGE[agent_dashboard_page]
+    PAGE_ROUTER -->|📈 Analytics| ANALYTICS_PAGE[analytics_page]
+    PAGE_ROUTER -->|⚙️ Settings| SETTINGS_PAGE[settings_page]
+    
+    %% Core Module Instantiation
+    DATA_PAGE --> CDL_INIT[ClinicalDataLoader.__init__]
+    AGENT_PAGE --> CA_INIT[ClinicalAgent.__init__]
+    ANALYTICS_PAGE --> MODULES_INIT[All Modules.__init__]
+```
+
+### **🏗️ Core Classes & Their Relationships**
+
+```mermaid
+classDiagram
+    %% Entry Point Class
+    class StreamlitApp {
+        +main()
+        +configure_page()
+        +display_header()
+        +display_sidebar()
+        +data_upload_page()
+        +agent_dashboard_page()
+        +analytics_page()
+        +settings_page()
+        +display_file_uploader()
+        +display_analysis_controls()
+        +display_data_visualizations()
+        +run_analysis()
+        +display_agent_dashboard()
+    }
+    
+    %% Core Domain Classes
+    class ClinicalDataLoader {
+        +config: Dict
+        +data: DataFrame
+        +metadata: Dict
+        +__init__(config)
+        +load_data(file_path): DataFrame
+        +get_patient_data(patient_id): DataFrame
+        +get_cohort_data(cohort): DataFrame
+        +get_date_range_data(start, end): DataFrame
+        +generate_synthetic_data(): DataFrame
+        +get_summary_statistics(): Dict
+        -_validate_data_structure()
+        -_validate_data_types()
+        -_clean_data(): DataFrame
+        -_handle_missing_values(): DataFrame
+        -_generate_metadata()
+    }
+    
+    class IssueDetector {
+        +config: Dict
+        +detected_issues: List[IssueAlert]
+        +__init__(config)
+        +detect_all_issues(data): List[IssueAlert]
+        +detect_compliance_issues(data): List[IssueAlert]
+        +detect_efficacy_issues(data): List[IssueAlert]
+        +detect_adverse_event_patterns(data): List[IssueAlert]
+        +detect_statistical_outliers(data): List[IssueAlert]
+        +detect_data_quality_issues(data): List[IssueAlert]
+        +detect_temporal_trends(data): List[IssueAlert]
+        +get_issue_summary(): Dict
+        -_get_default_config(): Dict
+    }
+    
+    class CohortAnalyzer {
+        +config: Dict
+        +analysis_results: Dict
+        +__init__(config)
+        +compare_cohorts(data, cohort_column, cohort_a, cohort_b): CohortComparisonResult
+        +perform_subgroup_analysis(data, subgroup_column): Dict
+        +generate_cohort_summary_report(result): str
+        -_calculate_cohort_statistics(data, name): Dict
+        -_perform_statistical_tests(cohort_a, cohort_b): Dict
+        -_calculate_effect_sizes(cohort_a, cohort_b): Dict
+        -_calculate_confidence_interval(sample_a, sample_b): Tuple
+        -_assess_clinical_significance(stats_a, stats_b): Dict
+        -_generate_recommendations(stats_a, stats_b): List[str]
+    }
+    
+    class ScenarioSimulator {
+        +config: Dict
+        +simulation_history: List[SimulationResult]
+        +models: Dict
+        +__init__(config)
+        +simulate_dosage_adjustment(data, patient_id, current, new): SimulationResult
+        +simulate_outcome_scenarios(data, params): SimulationResult
+        +get_simulation_summary(): Dict
+        -_calculate_baseline_metrics(history): Dict
+        -_predict_dosage_outcomes(history, baseline, dosage, duration): Dict
+        -_assess_dosage_risks(baseline, dosage, new_dosage): Dict
+        -_calculate_prediction_intervals(history, baseline, dosage): Dict
+        -_generate_dosage_recommendations(baseline, params): List[str]
+        -_calculate_confidence_score(points, risk, outcomes): float
+    }
+    
+    class GenAIInterface {
+        +provider: str
+        +api_key: str
+        +model: str
+        +client: OpenAI|AzureOpenAI
+        +config: Dict
+        +__init__(api_key, model, provider)
+        +analyze_doctor_notes(notes, context): AnalysisResult
+        +generate_cohort_comparison_summary(cohort_a, cohort_b): str
+        +generate_scenario_simulation_summary(params, result): str
+        +generate_regulatory_summary(trial_data, safety_data): str
+        +extract_adverse_events_from_text(text): List[Dict]
+        +generate_clinical_insights(data_summary, analysis): str
+        +generate_insights(prompt): str
+        +get_available_models(): List[str]
+        -_get_default_config(): Dict
+        -_make_api_call(messages): str
+    }
+    
+    class MemoryManager {
+        +memory_dir: str
+        +config: Dict
+        +cache: Dict
+        +db_connection: Connection
+        +__init__(memory_dir, config)
+        +store_data(data_id, data, metadata): str
+        +get_data(data_id): Any
+        +store_insight(insight): str
+        +get_insights(insight_type, limit): List[Insight]
+        +store_pattern(pattern_id, pattern_type, data): str
+        +get_patterns(pattern_type, confidence): List[Dict]
+        +search_memory(query, entry_types): List[MemoryEntry]
+        +cleanup_memory(force)
+        -_init_database()
+        -_cleanup_cache()
+    }
+    
+    class ClinicalAgent {
+        +config: Dict
+        +genai: GenAIInterface
+        +issue_detector: IssueDetector
+        +cohort_analyzer: CohortAnalyzer
+        +scenario_simulator: ScenarioSimulator
+        +memory: MemoryManager
+        +task_queue: List[AgentTask]
+        +active_tasks: Dict
+        +completed_tasks: List[AgentTask]
+        +insights: List[Insight]
+        +exploration_history: List
+        +metrics: Dict
+        +__init__(config)
+        +analyze_trial_data(data, goals): Dict
+        +get_agent_status(): Dict
+        -_create_initial_analysis_tasks(data, goals): List[AgentTask]
+        -_execute_analysis_workflow(session): Dict
+        -_execute_task(task): Any
+        -_execute_data_exploration(task): Dict
+        -_execute_issue_detection(task): Dict
+        -_execute_cohort_analysis(task): Dict
+        -_execute_patient_analysis(task): Dict
+        -_execute_scenario_simulation(task): Dict
+        -_execute_goal_analysis(task): Dict
+        -_generate_session_insights(session, results): List[Insight]
+        -_generate_issue_insights(results, timestamp): List[Insight]
+        -_generate_cohort_insights(results, timestamp): List[Insight]
+        -_generate_patient_insights(results, timestamp): List[Insight]
+        -_generate_session_recommendations(insights): List[str]
+        -_update_metrics()
+    }
+    
+    %% Data Classes
+    class IssueAlert {
+        +issue_type: str
+        +severity: str
+        +patient_id: str
+        +description: str
+        +affected_records: int
+        +recommendation: str
+        +confidence_score: float
+        +metadata: Dict
+    }
+    
+    class CohortComparisonResult {
+        +cohort_a: str
+        +cohort_b: str
+        +cohort_a_stats: Dict
+        +cohort_b_stats: Dict
+        +statistical_tests: Dict
+        +effect_sizes: Dict
+        +clinical_significance: Dict
+        +recommendations: List[str]
+        +confidence_level: float
+    }
+    
+    class SimulationResult {
+        +simulation_id: str
+        +patient_id: str
+        +baseline_metrics: Dict
+        +predicted_outcomes: Dict
+        +risk_assessment: Dict
+        +confidence_intervals: Dict
+        +recommendations: List[str]
+        +confidence_score: float
+    }
+    
+    class AnalysisResult {
+        +summary: str
+        +key_findings: List[str]
+        +recommendations: List[str]
+        +confidence_score: float
+        +adverse_events: List[Dict]
+        +clinical_insights: List[str]
+    }
+    
+    class AgentTask {
+        +task_id: str
+        +task_type: str
+        +priority: TaskPriority
+        +status: TaskStatus
+        +description: str
+        +parameters: Dict
+        +results: Any
+        +created_at: datetime
+        +updated_at: datetime
+    }
+    
+    class Insight {
+        +insight_id: str
+        +insight_type: str
+        +content: str
+        +confidence_score: float
+        +source_task: str
+        +timestamp: datetime
+        +metadata: Dict
+    }
+    
+    class MemoryEntry {
+        +entry_id: str
+        +entry_type: str
+        +content: Any
+        +metadata: Dict
+        +created_at: datetime
+        +confidence_score: float
+    }
+    
+    %% Relationships
+    StreamlitApp --> ClinicalDataLoader : creates/uses
+    StreamlitApp --> ClinicalAgent : creates/uses
+    StreamlitApp --> IssueDetector : creates/uses
+    StreamlitApp --> CohortAnalyzer : creates/uses
+    StreamlitApp --> ScenarioSimulator : creates/uses
+    StreamlitApp --> GenAIInterface : creates/uses
+    
+    ClinicalAgent --> GenAIInterface : aggregates
+    ClinicalAgent --> IssueDetector : aggregates
+    ClinicalAgent --> CohortAnalyzer : aggregates
+    ClinicalAgent --> ScenarioSimulator : aggregates
+    ClinicalAgent --> MemoryManager : aggregates
+    
+    IssueDetector --> IssueAlert : creates
+    CohortAnalyzer --> CohortComparisonResult : creates
+    ScenarioSimulator --> SimulationResult : creates
+    GenAIInterface --> AnalysisResult : creates
+    ClinicalAgent --> AgentTask : manages
+    ClinicalAgent --> Insight : generates
+    MemoryManager --> MemoryEntry : manages
+    
+    ClinicalAgent --> "1..*" AgentTask : manages
+    MemoryManager --> "0..*" MemoryEntry : stores
+    ClinicalAgent --> "0..*" Insight : generates
+    IssueDetector --> "0..*" IssueAlert : detects
+```
+
+### **🔄 Method Call Flow & Dependencies**
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant StreamlitApp
+    participant ClinicalAgent
+    participant IssueDetector
+    participant CohortAnalyzer
+    participant ScenarioSimulator
+    participant GenAIInterface
+    participant MemoryManager
+    participant ClinicalDataLoader
+    
+    %% User Interaction Flow
+    User->>StreamlitApp: Launch Application
+    StreamlitApp->>StreamlitApp: main()
+    StreamlitApp->>StreamlitApp: configure_page()
+    StreamlitApp->>StreamlitApp: display_sidebar()
+    
+    %% Data Upload Flow
+    User->>StreamlitApp: Upload CSV File
+    StreamlitApp->>ClinicalDataLoader: __init__(config)
+    ClinicalDataLoader->>ClinicalDataLoader: _get_default_config()
+    StreamlitApp->>ClinicalDataLoader: load_data(file_path)
+    ClinicalDataLoader->>ClinicalDataLoader: _validate_data_structure()
+    ClinicalDataLoader->>ClinicalDataLoader: _validate_data_types()
+    ClinicalDataLoader->>ClinicalDataLoader: _clean_data()
+    ClinicalDataLoader->>ClinicalDataLoader: _handle_missing_values()
+    ClinicalDataLoader->>ClinicalDataLoader: _generate_metadata()
+    ClinicalDataLoader-->>StreamlitApp: DataFrame + metadata
+    
+    %% Agent Analysis Flow
+    User->>StreamlitApp: Start AI Analysis
+    StreamlitApp->>ClinicalAgent: __init__(config)
+    ClinicalAgent->>GenAIInterface: __init__()
+    ClinicalAgent->>IssueDetector: __init__()
+    ClinicalAgent->>CohortAnalyzer: __init__()
+    ClinicalAgent->>ScenarioSimulator: __init__()
+    ClinicalAgent->>MemoryManager: __init__()
+    
+    StreamlitApp->>ClinicalAgent: analyze_trial_data(data, goals)
+    ClinicalAgent->>MemoryManager: store_data('trial_data', data)
+    ClinicalAgent->>ClinicalAgent: _create_initial_analysis_tasks(data, goals)
+    ClinicalAgent->>ClinicalAgent: _execute_analysis_workflow(session_id)
+    
+    %% Issue Detection Flow
+    ClinicalAgent->>IssueDetector: detect_all_issues(data)
+    IssueDetector->>IssueDetector: detect_compliance_issues(data)
+    IssueDetector->>IssueDetector: detect_efficacy_issues(data)
+    IssueDetector->>IssueDetector: detect_adverse_event_patterns(data)
+    IssueDetector->>IssueDetector: detect_statistical_outliers(data)
+    IssueDetector->>IssueDetector: detect_data_quality_issues(data)
+    IssueDetector->>IssueDetector: detect_temporal_trends(data)
+    IssueDetector-->>ClinicalAgent: List[IssueAlert]
+    
+    %% Cohort Analysis Flow
+    ClinicalAgent->>CohortAnalyzer: compare_cohorts(data, 'cohort', 'A', 'B')
+    CohortAnalyzer->>CohortAnalyzer: _calculate_cohort_statistics(cohort_a_data, 'A')
+    CohortAnalyzer->>CohortAnalyzer: _calculate_cohort_statistics(cohort_b_data, 'B')
+    CohortAnalyzer->>CohortAnalyzer: _perform_statistical_tests(cohort_a_data, cohort_b_data)
+    CohortAnalyzer->>CohortAnalyzer: _calculate_effect_sizes(cohort_a_data, cohort_b_data)
+    CohortAnalyzer->>CohortAnalyzer: _assess_clinical_significance(stats_a, stats_b)
+    CohortAnalyzer->>CohortAnalyzer: _generate_recommendations(stats_a, stats_b)
+    CohortAnalyzer-->>ClinicalAgent: CohortComparisonResult
+    
+    %% Scenario Simulation Flow
+    ClinicalAgent->>ScenarioSimulator: simulate_dosage_adjustment(data, 'P001', 50, 75)
+    ScenarioSimulator->>ScenarioSimulator: _calculate_baseline_metrics(patient_history)
+    ScenarioSimulator->>ScenarioSimulator: _predict_dosage_outcomes(history, baseline, 75, 30)
+    ScenarioSimulator->>ScenarioSimulator: _assess_dosage_risks(baseline, 50, 75)
+    ScenarioSimulator->>ScenarioSimulator: _calculate_prediction_intervals(history, baseline, 75)
+    ScenarioSimulator->>ScenarioSimulator: _generate_dosage_recommendations(baseline, params)
+    ScenarioSimulator->>ScenarioSimulator: _calculate_confidence_score(points, risk, outcomes)
+    ScenarioSimulator-->>ClinicalAgent: SimulationResult
+    
+    %% GenAI Integration Flow
+    ClinicalAgent->>GenAIInterface: generate_clinical_insights(data_summary, analysis_results)
+    GenAIInterface->>GenAIInterface: _make_api_call(messages)
+    GenAIInterface-->>ClinicalAgent: String insights
+    
+    %% Memory Storage Flow
+    ClinicalAgent->>MemoryManager: store_insight(insight)
+    MemoryManager->>MemoryManager: _init_database()
+    MemoryManager-->>ClinicalAgent: insight_id
+    
+    %% Final Results
+    ClinicalAgent->>ClinicalAgent: _generate_session_insights(session_id, analysis_results)
+    ClinicalAgent->>ClinicalAgent: _generate_session_recommendations(insights)
+    ClinicalAgent->>ClinicalAgent: _update_metrics()
+    ClinicalAgent-->>StreamlitApp: Complete Analysis Results
+    StreamlitApp-->>User: Display Results & Visualizations
+```
+
+### **🎯 Detailed Method Interconnections**
+
+#### **1. ClinicalDataLoader Internal Flow:**
+- `load_data()` → `_validate_data_structure()` → `_validate_data_types()` → `_clean_data()` → `_handle_missing_values()` → `_generate_metadata()`
+- `get_patient_data()`, `get_cohort_data()`, `get_date_range_data()` all filter the main dataset
+- `generate_synthetic_data()` creates test data using configurable parameters
+
+#### **2. IssueDetector Method Chain:**
+- `detect_all_issues()` calls all individual detection methods:
+  - `detect_compliance_issues()` → checks adherence patterns
+  - `detect_efficacy_issues()` → analyzes treatment outcomes
+  - `detect_adverse_event_patterns()` → identifies safety signals
+  - `detect_statistical_outliers()` → finds data anomalies
+  - `detect_data_quality_issues()` → validates data integrity
+  - `detect_temporal_trends()` → analyzes time-series patterns
+
+#### **3. CohortAnalyzer Statistical Pipeline:**
+- `compare_cohorts()` orchestrates the entire analysis:
+  - `_calculate_cohort_statistics()` → descriptive statistics for each cohort
+  - `_perform_statistical_tests()` → t-tests, chi-square, Mann-Whitney U
+  - `_calculate_effect_sizes()` → Cohen's d, Cramér's V, eta-squared
+  - `_calculate_confidence_interval()` → CI for mean differences
+  - `_assess_clinical_significance()` → clinical relevance assessment
+  - `_generate_recommendations()` → actionable clinical advice
+
+#### **4. ScenarioSimulator Prediction Engine:**
+- `simulate_dosage_adjustment()` comprehensive prediction:
+  - `_calculate_baseline_metrics()` → patient history analysis
+  - `_predict_dosage_outcomes()` → efficacy/safety predictions
+  - `_assess_dosage_risks()` → risk stratification
+  - `_calculate_prediction_intervals()` → Monte Carlo simulations
+  - `_generate_dosage_recommendations()` → clinical guidance
+  - `_calculate_confidence_score()` → prediction reliability
+
+#### **5. ClinicalAgent Orchestration:**
+- `analyze_trial_data()` main entry point:
+  - `_create_initial_analysis_tasks()` → task planning
+  - `_execute_analysis_workflow()` → concurrent execution
+  - `_execute_task()` → individual task execution:
+    - `_execute_data_exploration()`
+    - `_execute_issue_detection()`
+    - `_execute_cohort_analysis()`
+    - `_execute_patient_analysis()`
+    - `_execute_scenario_simulation()`
+    - `_execute_goal_analysis()`
+  - `_generate_session_insights()` → insight consolidation
+  - `_generate_session_recommendations()` → final recommendations
+
+#### **6. StreamlitApp UI Flow:**
+- `main()` → `configure_page()` → `display_header()` → `display_sidebar()`
+- Page routing:
+  - `data_upload_page()` → `display_file_uploader()` → `display_data_visualizations()`
+  - `agent_dashboard_page()` → `display_agent_dashboard()` → `run_analysis()`
+  - `analytics_page()` → module-specific analysis functions
+  - `settings_page()` → configuration management
+
+### **🏆 Integration Points & Dependencies**
+
+1. **Streamlit ↔ All Modules**: Direct instantiation and method calls
+2. **ClinicalAgent ↔ All Analysis Modules**: Composition pattern with task delegation
+3. **MemoryManager ↔ All Modules**: Data persistence and retrieval service
+4. **GenAIInterface ↔ Analysis Results**: AI-powered insight generation
+5. **Configuration**: All modules use consistent configuration pattern with `_get_default_config()`
+6. **Error Handling**: Comprehensive exception management across all method calls
+7. **Logging**: Centralized logging system for debugging and monitoring
+
+This architecture provides:
+- **🔄 Loose Coupling**: Modules interact through well-defined interfaces
+- **🎯 High Cohesion**: Each module has a single, focused responsibility
+- **📈 Scalability**: Easy to extend with new analysis modules
+- **🧪 Testability**: Each component can be tested independently
+- **🔧 Maintainability**: Clear separation of concerns and consistent patterns
+
 ## ⚙️ Installation
 
 ### 📋 Prerequisites
@@ -460,6 +915,143 @@ The web application will be available at: **http://localhost:8501**
 - **🔬 Statistical Analysis** - Cohort comparisons and statistical tests
 - **⚠️ Issue Detection** - Automated clinical issue identification
 - **🎯 Scenario Modeling** - What-if analysis and predictions
+
+#### **🎯 Product Demonstration Examples**
+
+Below are real-world examples you can use to demonstrate the platform's capabilities during product presentations:
+
+##### **1. Clinical Report Analysis**
+
+```
+CLINICAL TRIAL REPORT - Study ABC-123
+Patient ID: P-2024-0847
+Study Day: 84
+Treatment: Investigational Drug XYZ-456 (75mg daily)
+
+BACKGROUND:
+45-year-old male enrolled in Phase II randomized controlled trial for chronic pain management. Patient has history of lower back pain (8 years) and previous failed treatments with standard NSAIDs.
+
+CURRENT ASSESSMENT:
+Patient reports significant improvement in pain scores from baseline VAS 8.2 to current VAS 3.1 (62% reduction). Sleep quality has improved considerably - patient now sleeps 6-7 hours nightly compared to 3-4 hours at baseline. 
+
+COMPLIANCE:
+Medication adherence confirmed at 94% based on pill counts and patient diary. No missed doses in past 14 days.
+
+ADVERSE EVENTS:
+Mild gastrointestinal upset reported on Days 12-15, resolved with dose timing adjustment. Patient experienced transient dizziness on Day 28, lasted approximately 2 hours, resolved spontaneously. No other adverse events reported.
+
+LABORATORY RESULTS:
+All safety labs within normal limits. Liver function tests show no elevation. Complete blood count unremarkable.
+
+INVESTIGATOR ASSESSMENT:
+Patient demonstrating excellent response to treatment with minimal side effects. Continue current dosing regimen. Next visit scheduled in 28 days.
+```
+
+##### **2. Adverse Event Description Analysis**
+
+```
+ADVERSE EVENT REPORT
+Report ID: AE-2024-3421
+Study: DEF-789 Phase III Oncology Trial
+
+EVENT DESCRIPTION:
+On Study Day 156, patient (ID: P-3421) developed severe neutropenia (Grade 3, ANC: 750 cells/μL) approximately 10 days after Cycle 4 of chemotherapy. Patient presented to clinic with fever (101.8°F), fatigue, and general malaise. 
+
+CLINICAL COURSE:
+Patient was immediately hospitalized for neutropenic fever management. Blood cultures obtained - negative for bacterial growth. Started on broad-spectrum antibiotics (piperacillin-tazobactam) and G-CSF support. Study drug was held pending recovery.
+
+CONCOMITANT MEDICATIONS:
+- Ondansetron 8mg TID for nausea
+- Allopurinol 300mg daily
+- Omeprazole 20mg daily
+
+OUTCOME:
+ANC recovered to 1,200 cells/μL by Day 164. Fever resolved by Day 161. Patient discharged home in stable condition. Study drug resumed at 75% dose on Day 170 with enhanced monitoring.
+
+CAUSALITY ASSESSMENT:
+Event assessed as "definitely related" to study medication based on temporal relationship, known drug profile, and dechallenge/rechallenge response.
+
+SERIOUSNESS CRITERIA:
+Serious - required hospitalization and was life-threatening due to risk of severe infection.
+```
+
+##### **3. Medical Text Summarization**
+
+```
+PATIENT CASE STUDY - CARDIOVASCULAR OUTCOMES
+
+Mrs. Sarah Johnson, 67-year-old postmenopausal woman with type 2 diabetes mellitus (15-year history), hypertension (controlled), and dyslipidemia, presented to our cardiology clinic for evaluation of exertional chest discomfort and shortness of breath that had been progressively worsening over the past 6 months.
+
+Her medical history is significant for a myocardial infarction 3 years ago, treated with percutaneous coronary intervention and drug-eluting stent placement in the left anterior descending artery. She has been on optimal medical therapy including dual antiplatelet therapy (aspirin 81mg daily and clopidogrel 75mg daily), atorvastatin 80mg daily, metoprolol succinate 100mg daily, and lisinopril 10mg daily. Her diabetes is managed with metformin 1000mg twice daily and insulin glargine 24 units at bedtime.
+
+Physical examination revealed blood pressure of 138/84 mmHg, heart rate 68 bpm regular, no murmurs or gallops, clear lung fields, and no peripheral edema. Laboratory studies showed HbA1c of 7.2%, LDL cholesterol 78 mg/dL, creatinine 1.1 mg/dL, and BNP 145 pg/mL.
+
+Exercise stress testing demonstrated exercise-induced ST-segment depression in leads V4-V6 with reproduction of her typical chest discomfort at 85% maximum predicted heart rate. Echocardiogram showed left ventricular ejection fraction of 52% with mild hypokinesis of the anterior wall.
+
+Coronary angiography revealed 70% stenosis in the mid-right coronary artery and 60% stenosis in the diagonal branch. The previously placed stent in the LAD remained patent with no restenosis. Given the patient's symptoms and objective evidence of ischemia, percutaneous coronary intervention was recommended.
+
+The patient underwent successful PCI with drug-eluting stent placement in the right coronary artery. Post-procedure, she was continued on dual antiplatelet therapy and her other medications were optimized. At 3-month follow-up, she reported complete resolution of chest discomfort and significant improvement in exercise tolerance.
+```
+
+##### **4. Custom Query Examples**
+
+**Safety Data Analysis:**
+```
+Analyze the following safety data for patterns and concerns:
+
+Study participants (n=245) receiving Drug ABC:
+- Grade 1-2 nausea: 78 patients (31.8%)
+- Grade 3-4 neutropenia: 12 patients (4.9%)
+- Fatigue (all grades): 156 patients (63.7%)
+- Peripheral neuropathy: 23 patients (9.4%)
+- Treatment discontinuation due to AEs: 18 patients (7.3%)
+- Serious adverse events: 8 patients (3.3%)
+
+Control group (n=241):
+- Grade 1-2 nausea: 23 patients (9.5%)
+- Grade 3-4 neutropenia: 2 patients (0.8%)
+- Fatigue (all grades): 89 patients (36.9%)
+- Peripheral neuropathy: 3 patients (1.2%)
+- Treatment discontinuation: 6 patients (2.5%)
+- Serious adverse events: 5 patients (2.1%)
+
+Please identify key safety signals and recommendations.
+```
+
+**Patient Case Analysis:**
+```
+Review this complex patient case and provide treatment recommendations:
+
+Patient: 58-year-old male with newly diagnosed Stage IIIA non-small cell lung cancer
+Performance Status: ECOG 1
+Comorbidities: COPD (moderate), coronary artery disease (stable), diabetes type 2
+
+Molecular Testing Results:
+- EGFR: Wild type
+- ALK: Negative
+- PD-L1 expression: 65%
+- TMB: 8 mutations/Mb
+
+Previous Treatment:
+- 4 cycles carboplatin/paclitaxel with concurrent radiation therapy
+- Achieved partial response (45% tumor reduction)
+- Completed treatment 2 months ago
+
+Current Status:
+- Recent CT shows stable disease
+- Patient reports mild fatigue, manageable cough
+- Labs: Normal CBC, mild elevation in creatinine (1.4 mg/dL)
+
+Question: What are the optimal next steps for maintenance therapy considering his molecular profile and clinical status?
+```
+
+#### **🎨 Demonstration Tips:**
+
+- **Copy and paste** any of the above examples into the **Analytics & Insights** tab
+- Use the **AI Text Analysis** feature to get instant insights
+- Show how the platform identifies **safety signals**, **efficacy patterns**, and **clinical recommendations**
+- Demonstrate the **real-time visualization** capabilities with interactive charts
+- Export the results to showcase the **comprehensive reporting** features
 
 ### ⚙️ **4. Settings & Configuration**
 - **🔧 Analysis Parameters** - Customize analysis thresholds and criteria
