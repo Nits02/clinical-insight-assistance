@@ -99,10 +99,11 @@ import json
 import io
 import asyncio
 import logging
+import time
+import os
 from datetime import datetime, timedelta
 from typing import Dict, List, Any, Optional
 import sys
-import os
 
 # Add the parent directory to the path for imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -838,61 +839,100 @@ def run_analysis(data: pd.DataFrame, goals: List[str], confidence_threshold: flo
     # Show debug info for analysis initialization
     show_debug_info("agent_core.py", "ClinicalAgent", "__init__", "Initializing clinical AI agent for analysis")
     
-    progress_bar = st.progress(0)
-    status_text = st.empty()
+    progress_container = st.container()
+    with progress_container:
+        progress_bar = st.progress(0)
+        status_text = st.empty()
     
     try:
-        # Initialize components
-        status_text.text("Initializing AI components...")
+        # Initialize components with timeout protection
+        status_text.text("🔧 Initializing AI components...")
         progress_bar.progress(10)
         
+        # Create agent with connection validation disabled for faster startup
         if 'agent' not in st.session_state:
-            st.session_state.agent = ClinicalAgent()
+            with st.spinner("Setting up AI agent..."):
+                os.environ['VALIDATE_API_CONNECTION'] = 'false'  # Disable validation for faster startup
+                st.session_state.agent = ClinicalAgent()
+                os.environ['VALIDATE_API_CONNECTION'] = 'true'   # Re-enable for next time
         
         agent = st.session_state.agent
         
-        # Run analysis
-        status_text.text("Running AI analysis...")
-        progress_bar.progress(30)
+        # Run analysis with better progress tracking
+        status_text.text("🤖 Starting AI analysis...")
+        progress_bar.progress(20)
         
         # Show debug info for main analysis
         show_debug_info("agent_core.py", "ClinicalAgent", "analyze_trial_data", "Running comprehensive AI analysis on clinical data")
         
-        # This needs to be run in an async context
-        async def run_async_analysis():
-            return await agent.analyze_trial_data(data, goals)
-        
-        # Create event loop for async execution
-        try:
-            loop = asyncio.get_event_loop()
-        except RuntimeError:
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-        
-        results = loop.run_until_complete(run_async_analysis())
+        # Use a simpler approach - call the sync version directly with timeout
+        with st.spinner("🔍 Analyzing clinical data... This may take a few minutes."):
+            try:
+                # Set a reasonable timeout for the entire analysis
+                import signal
+                
+                def timeout_handler(signum, frame):
+                    raise TimeoutError("Analysis timed out after 5 minutes")
+                
+                # Set 5 minute timeout
+                signal.signal(signal.SIGALRM, timeout_handler)
+                signal.alarm(300)  # 5 minutes
+                
+                # Run the analysis synchronously but with timeout protection
+                status_text.text("🔬 Processing clinical data...")
+                progress_bar.progress(40)
+                
+                # Call agent analysis directly without async wrapper
+                results = agent.analyze_trial_data_sync(data, goals)
+                
+                # Clear the timeout
+                signal.alarm(0)
+                
+            except TimeoutError:
+                signal.alarm(0)  # Clear timeout
+                st.error("⏰ Analysis timed out. Please try with a smaller dataset or fewer goals.")
+                return
+            except Exception as analysis_error:
+                signal.alarm(0)  # Clear timeout
+                raise analysis_error
         
         progress_bar.progress(80)
-        status_text.text("Processing results...")
+        status_text.text("📊 Processing results...")
         
         # Store results in session state
         st.session_state.analysis_results = results
         
         progress_bar.progress(100)
-        status_text.text("Analysis complete!")
+        status_text.text("✅ Analysis complete!")
         
         # Show success message
-        st.success(f"✅ Analysis completed! Generated {len(results.get('insights', []))} insights and {len(results.get('recommendations', []))} recommendations.")
+        insights_count = len(results.get('insights', []))
+        recommendations_count = len(results.get('recommendations', []))
+        st.success(f"✅ Analysis completed! Generated {insights_count} insights and {recommendations_count} recommendations.")
+        
+        # Clear progress indicators
+        time.sleep(1)
+        progress_container.empty()
         
         # Auto-refresh to show results
         st.rerun()
         
     except Exception as e:
-        st.error(f"Analysis failed: {str(e)}")
+        error_msg = str(e)
+        st.error(f"❌ Analysis failed: {error_msg}")
+        
+        # Provide helpful error messages
+        if "connection" in error_msg.lower():
+            st.error("🔗 Connection issue detected. Please check your internet connection and API key.")
+        elif "timeout" in error_msg.lower():
+            st.error("⏰ The analysis is taking longer than expected. Try with a smaller dataset.")
+        elif "api" in error_msg.lower():
+            st.error("🔑 API issue detected. Please verify your DIAL API key is valid.")
+        
         logger.error(f"Analysis error: {e}", exc_info=True)
     
     finally:
-        progress_bar.empty()
-        status_text.empty()
+        progress_container.empty()
 
 def download_results():
     """Generate and provide download link for analysis results."""

@@ -116,8 +116,14 @@ class GenAIInterface:
         # Load default configuration optimized for clinical analysis
         self.config = self._get_default_config()
         
-        # Test connection after configuration is loaded
-        self._validate_connection()
+        # Test connection after configuration is loaded (optional, can be disabled)
+        validate_connection = os.getenv('VALIDATE_API_CONNECTION', 'true').lower() == 'true'
+        if validate_connection:
+            try:
+                self._validate_connection()
+            except Exception as e:
+                logger.warning(f"⚠️ API validation failed but continuing: {str(e)}")
+                # Don't fail initialization, just log the warning
     
     def _validate_connection(self) -> bool:
         """
@@ -136,17 +142,18 @@ class GenAIInterface:
             logger.info("Validating API connection...")
             
             # Simple test message to validate connection
-            test_messages = [{"role": "user", "content": "Hello, respond with 'API connection successful'"}]
+            test_messages = [{"role": "user", "content": "Hi"}]
             
-            # Make a quick test call with reduced timeout
-            response = self._make_api_call(test_messages, max_tokens=50, timeout=15)
+            # Make a quick test call with very short timeout and minimal tokens
+            response = self._make_api_call(
+                test_messages, 
+                max_tokens=10,  # Very short response
+                timeout=10,     # Short timeout
+                max_retries=1   # Only one retry
+            )
             
-            if "successful" in response.lower() or "hello" in response.lower():
-                logger.info("✅ API connection validation successful")
-                return True
-            else:
-                logger.warning(f"⚠️ Unexpected response during validation: {response}")
-                return True  # Still consider it successful if we got a response
+            logger.info("✅ API connection validation successful")
+            return True
                 
         except Exception as e:
             error_msg = f"API connection validation failed: {str(e)}"

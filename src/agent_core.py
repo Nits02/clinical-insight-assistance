@@ -226,6 +226,51 @@ class ClinicalAgent:
             'exploration_paths': self.exploration_history[-10:]  # Last 10 exploration paths
         }
     
+    def analyze_trial_data_sync(self, data: pd.DataFrame, analysis_goals: List[str] = None) -> Dict[str, Any]:
+        """
+        Synchronous wrapper for analyze_trial_data to avoid blocking Streamlit UI.
+        
+        Args:
+            data (pd.DataFrame): Clinical trial data.
+            analysis_goals (List[str], optional): Specific analysis goals.
+            
+        Returns:
+            Dict[str, Any]: Analysis results and insights.
+        """
+        import asyncio
+        
+        try:
+            # Try to get existing event loop
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                # If loop is already running, create a new one in a thread
+                import threading
+                import concurrent.futures
+                
+                def run_in_thread():
+                    new_loop = asyncio.new_event_loop()
+                    asyncio.set_event_loop(new_loop)
+                    try:
+                        return new_loop.run_until_complete(self.analyze_trial_data(data, analysis_goals))
+                    finally:
+                        new_loop.close()
+                
+                with concurrent.futures.ThreadPoolExecutor() as executor:
+                    future = executor.submit(run_in_thread)
+                    return future.result(timeout=300)  # 5 minute timeout
+            else:
+                # No loop running, we can use the current one
+                return loop.run_until_complete(self.analyze_trial_data(data, analysis_goals))
+                
+        except RuntimeError:
+            # No event loop, create a new one
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            try:
+                return loop.run_until_complete(self.analyze_trial_data(data, analysis_goals))
+            finally:
+                loop.close()
+    
     def _create_initial_analysis_tasks(self, data: pd.DataFrame, analysis_goals: List[str] = None) -> List[AgentTask]:
         """
         Create initial analysis tasks based on data characteristics.
