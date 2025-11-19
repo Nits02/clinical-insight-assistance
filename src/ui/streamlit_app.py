@@ -868,32 +868,31 @@ def run_analysis(data: pd.DataFrame, goals: List[str], confidence_threshold: flo
         # Use a simpler approach - call the sync version directly with timeout
         with st.spinner("🔍 Analyzing clinical data... This may take a few minutes."):
             try:
-                # Set a reasonable timeout for the entire analysis
-                import signal
+                # Run the analysis synchronously with timeout protection using threading
+                import concurrent.futures
                 
-                def timeout_handler(signum, frame):
-                    raise TimeoutError("Analysis timed out after 5 minutes")
+                def run_analysis_with_timeout():
+                    return agent.analyze_trial_data_sync(data, goals)
                 
-                # Set 5 minute timeout
-                signal.signal(signal.SIGALRM, timeout_handler)
-                signal.alarm(300)  # 5 minutes
-                
-                # Run the analysis synchronously but with timeout protection
-                status_text.text("🔬 Processing clinical data...")
-                progress_bar.progress(40)
-                
-                # Call agent analysis directly without async wrapper
-                results = agent.analyze_trial_data_sync(data, goals)
-                
-                # Clear the timeout
-                signal.alarm(0)
+                # Use ThreadPoolExecutor with timeout for better control
+                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+                    status_text.text("🔬 Processing clinical data...")
+                    progress_bar.progress(40)
+                    
+                    # Submit the analysis task
+                    future = executor.submit(run_analysis_with_timeout)
+                    
+                    # Wait for completion with timeout
+                    try:
+                        results = future.result(timeout=300)  # 5 minute timeout
+                    except concurrent.futures.TimeoutError:
+                        future.cancel()  # Attempt to cancel the task
+                        raise TimeoutError("Analysis timed out after 5 minutes")
                 
             except TimeoutError:
-                signal.alarm(0)  # Clear timeout
                 st.error("⏰ Analysis timed out. Please try with a smaller dataset or fewer goals.")
                 return
             except Exception as analysis_error:
-                signal.alarm(0)  # Clear timeout
                 raise analysis_error
         
         progress_bar.progress(80)

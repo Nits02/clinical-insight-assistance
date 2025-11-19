@@ -238,38 +238,42 @@ class ClinicalAgent:
             Dict[str, Any]: Analysis results and insights.
         """
         import asyncio
+        import threading
         
-        try:
-            # Try to get existing event loop
-            loop = asyncio.get_event_loop()
-            if loop.is_running():
-                # If loop is already running, create a new one in a thread
-                import threading
-                import concurrent.futures
-                
-                def run_in_thread():
-                    new_loop = asyncio.new_event_loop()
-                    asyncio.set_event_loop(new_loop)
-                    try:
-                        return new_loop.run_until_complete(self.analyze_trial_data(data, analysis_goals))
-                    finally:
-                        new_loop.close()
-                
-                with concurrent.futures.ThreadPoolExecutor() as executor:
-                    future = executor.submit(run_in_thread)
-                    return future.result(timeout=300)  # 5 minute timeout
-            else:
-                # No loop running, we can use the current one
-                return loop.run_until_complete(self.analyze_trial_data(data, analysis_goals))
-                
-        except RuntimeError:
-            # No event loop, create a new one
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
+        result = {}
+        exception = None
+        
+        def run_async_in_thread():
+            nonlocal result, exception
             try:
-                return loop.run_until_complete(self.analyze_trial_data(data, analysis_goals))
-            finally:
-                loop.close()
+                # Create new event loop for this thread
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                
+                try:
+                    # Run the async analysis
+                    result = loop.run_until_complete(self.analyze_trial_data(data, analysis_goals))
+                except Exception as e:
+                    exception = e
+                finally:
+                    loop.close()
+            except Exception as e:
+                exception = e
+        
+        # Run in a separate thread to avoid event loop conflicts
+        thread = threading.Thread(target=run_async_in_thread)
+        thread.daemon = True  # Allow main thread to exit
+        thread.start()
+        thread.join(timeout=300)  # 5 minute timeout
+        
+        if thread.is_alive():
+            # Thread is still running, analysis timed out
+            raise TimeoutError("Analysis timed out after 5 minutes")
+        
+        if exception:
+            raise exception
+        
+        return result
     
     def _create_initial_analysis_tasks(self, data: pd.DataFrame, analysis_goals: List[str] = None) -> List[AgentTask]:
         """
