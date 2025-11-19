@@ -92,9 +92,9 @@ class GenAIInterface:
             
             # Initialize Azure OpenAI client
             self.client = AzureOpenAI(
-                api_key=self.api_key,
+                api_key=self.api_key,  # DIAL API Key
                 api_version=self.api_version,
-                azure_endpoint=self.azure_endpoint
+                azure_endpoint=self.azure_endpoint  # https://ai-proxy.lab.epam.com
             )
             
             logger.info(f"GenAI Interface initialized with Azure OpenAI - Deployment: {self.deployment_name}")
