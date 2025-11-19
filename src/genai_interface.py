@@ -115,6 +115,43 @@ class GenAIInterface:
         
         # Load default configuration optimized for clinical analysis
         self.config = self._get_default_config()
+        
+        # Test connection after configuration is loaded
+        self._validate_connection()
+    
+    def _validate_connection(self) -> bool:
+        """
+        Validate API connection immediately after initialization.
+        
+        This method performs a quick test call to ensure the API credentials
+        and endpoint are working correctly, preventing issues later during analysis.
+        
+        Returns:
+            bool: True if connection is successful
+            
+        Raises:
+            Exception: If connection validation fails
+        """
+        try:
+            logger.info("Validating API connection...")
+            
+            # Simple test message to validate connection
+            test_messages = [{"role": "user", "content": "Hello, respond with 'API connection successful'"}]
+            
+            # Make a quick test call with reduced timeout
+            response = self._make_api_call(test_messages, max_tokens=50, timeout=15)
+            
+            if "successful" in response.lower() or "hello" in response.lower():
+                logger.info("✅ API connection validation successful")
+                return True
+            else:
+                logger.warning(f"⚠️ Unexpected response during validation: {response}")
+                return True  # Still consider it successful if we got a response
+                
+        except Exception as e:
+            error_msg = f"API connection validation failed: {str(e)}"
+            logger.error(f"❌ {error_msg}")
+            raise Exception(f"Failed to connect to OpenAI API. {error_msg}")
     
     def _get_default_config(self) -> Dict:
         """
@@ -156,6 +193,8 @@ class GenAIInterface:
         Raises:
             Exception: If API call fails after all retry attempts are exhausted.
         """
+        import time
+        
         # Merge default configuration with any custom parameters provided
         api_params = {**self.config, **kwargs}
         api_params['model'] = self.model
@@ -164,19 +203,41 @@ class GenAIInterface:
         # Extract retry configuration before making the API call
         max_retries = api_params.pop('max_retries', 3)
         
-        # Implement retry logic for robust API communication
+        # Implement retry logic with exponential backoff for robust API communication
         for attempt in range(max_retries):
             try:
+                # Add timeout to prevent hanging
+                api_params['timeout'] = 30  # 30 second timeout
+                
                 # Make the actual API call to OpenAI
                 response = self.client.chat.completions.create(**api_params)
+                
+                # Validate response
+                if not response.choices or not response.choices[0].message.content:
+                    raise Exception("Empty response received from API")
+                
                 # Extract and return the response content
                 return response.choices[0].message.content.strip()
                 
             except Exception as e:
-                logger.warning(f"API call attempt {attempt + 1} failed: {str(e)}")
+                error_msg = str(e)
+                logger.warning(f"API call attempt {attempt + 1} failed: {error_msg}")
+                
+                # Check for specific error types that shouldn't be retried
+                if "authentication" in error_msg.lower() or "api key" in error_msg.lower():
+                    raise Exception(f"Authentication error: {error_msg}. Please check your DIAL API key.")
+                
+                if "not found" in error_msg.lower() or "404" in error_msg:
+                    raise Exception(f"Model or endpoint not found: {error_msg}. Please check your deployment configuration.")
+                
                 # If this was the last attempt, raise the exception
                 if attempt == max_retries - 1:
-                    raise Exception(f"API call failed after {max_retries} attempts: {str(e)}")
+                    raise Exception(f"API call failed after {max_retries} attempts: {error_msg}")
+                
+                # Exponential backoff: wait longer between retries
+                wait_time = (2 ** attempt) + 1  # 2, 5, 9 seconds
+                logger.info(f"Waiting {wait_time} seconds before retry...")
+                time.sleep(wait_time)
     
     def analyze_doctor_notes(self, notes: List[str], patient_context: Optional[Dict] = None) -> AnalysisResult:
         """
