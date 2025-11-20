@@ -377,7 +377,7 @@ class ClinicalAgent:
     
     async def _execute_analysis_workflow(self, session_id: str) -> Dict[str, Any]:
         """
-        Execute the analysis workflow by processing tasks.
+        Execute the analysis workflow by processing tasks with timeout protection.
         
         Args:
             session_id (str): Analysis session identifier.
@@ -387,8 +387,27 @@ class ClinicalAgent:
         """
         results = {}
         max_concurrent = self.config['agent_config']['max_concurrent_tasks']
+        workflow_start_time = datetime.now()
+        max_workflow_time = timedelta(minutes=10)  # 10-minute max workflow time
+        task_timeout = timedelta(minutes=2)  # 2-minute max per task
+        
+        # Add safety counter to prevent infinite loops
+        iteration_count = 0
+        max_iterations = 1000
         
         while self.task_queue or self.active_tasks:
+            iteration_count += 1
+            current_time = datetime.now()
+            
+            # Safety checks to prevent infinite execution
+            if iteration_count > max_iterations:
+                logger.warning(f"Workflow reached maximum iterations ({max_iterations}), terminating")
+                break
+                
+            if current_time - workflow_start_time > max_workflow_time:
+                logger.warning(f"Workflow exceeded maximum time ({max_workflow_time}), terminating")
+                break
+            
             # Start new tasks if capacity allows
             while (len(self.active_tasks) < max_concurrent and 
                    self.task_queue and 
@@ -396,15 +415,24 @@ class ClinicalAgent:
                 
                 task = self.task_queue.pop(0)
                 task.status = TaskStatus.IN_PROGRESS
-                task.updated_at = datetime.now()
+                task.updated_at = current_time
                 self.active_tasks[task.task_id] = task
                 
-                # Execute task asynchronously
-                asyncio.create_task(self._execute_task(task))
+                # Execute task asynchronously with timeout protection
+                asyncio.create_task(self._execute_task_with_timeout(task, task_timeout))
             
-            # Check for completed tasks
+            # Check for completed tasks and timeout stale tasks
             completed_task_ids = []
             for task_id, task in self.active_tasks.items():
+                # Check if task has timed out
+                if (task.status == TaskStatus.IN_PROGRESS and 
+                    current_time - task.updated_at > task_timeout):
+                    logger.warning(f"Task {task_id} timed out, marking as failed")
+                    task.status = TaskStatus.FAILED
+                    task.error_message = "Task execution timeout"
+                    task.updated_at = current_time
+                
+                # Collect completed tasks
                 if task.status in [TaskStatus.COMPLETED, TaskStatus.FAILED, TaskStatus.CANCELLED]:
                     completed_task_ids.append(task_id)
                     
@@ -412,19 +440,51 @@ class ClinicalAgent:
                         results[task_id] = task.results
                         self.completed_tasks.append(task)
                         
-                        # Generate follow-up tasks based on results
-                        follow_up_tasks = await self._generate_follow_up_tasks(task)
-                        for follow_up_task in follow_up_tasks:
-                            await self._add_task(follow_up_task)
+                        # Generate follow-up tasks based on results (with limit)
+                        try:
+                            if len(self.task_queue) < 20:  # Limit queue size
+                                follow_up_tasks = await self._generate_follow_up_tasks(task)
+                                for follow_up_task in follow_up_tasks[:3]:  # Limit to 3 follow-ups per task
+                                    await self._add_task(follow_up_task)
+                        except Exception as e:
+                            logger.warning(f"Failed to generate follow-up tasks: {str(e)}")
+                    else:
+                        logger.info(f"Task {task_id} finished with status: {task.status}")
             
             # Remove completed tasks from active tasks
             for task_id in completed_task_ids:
                 del self.active_tasks[task_id]
             
-            # Small delay to prevent busy waiting
-            await asyncio.sleep(0.1)
+            # If no active tasks and no queued tasks, we're done
+            if not self.active_tasks and not self.task_queue:
+                break
+                
+            # Reasonable delay to prevent busy waiting
+            await asyncio.sleep(0.5)
         
         return results
+    
+    async def _execute_task_with_timeout(self, task: AgentTask, timeout: timedelta):
+        """
+        Execute a task with timeout protection.
+        
+        Args:
+            task (AgentTask): Task to execute.
+            timeout (timedelta): Maximum execution time.
+        """
+        try:
+            # Use asyncio.wait_for for timeout protection
+            await asyncio.wait_for(self._execute_task(task), timeout=timeout.total_seconds())
+        except asyncio.TimeoutError:
+            task.status = TaskStatus.FAILED
+            task.error_message = "Task execution timeout"
+            task.updated_at = datetime.now()
+            logger.warning(f"Task {task.task_id} timed out after {timeout}")
+        except Exception as e:
+            task.status = TaskStatus.FAILED
+            task.error_message = str(e)
+            task.updated_at = datetime.now()
+            logger.error(f"Task {task.task_id} failed with exception: {str(e)}")
     
     async def _execute_task(self, task: AgentTask):
         """
@@ -748,71 +808,87 @@ class ClinicalAgent:
     
     async def _generate_follow_up_tasks(self, completed_task: AgentTask) -> List[AgentTask]:
         """
-        Generate follow-up tasks based on completed task results.
+        Generate follow-up tasks based on completed task results with limits to prevent explosion.
         
         Args:
             completed_task (AgentTask): Completed task.
             
         Returns:
-            List[AgentTask]: List of follow-up tasks.
+            List[AgentTask]: List of follow-up tasks (limited to prevent excessive task generation).
         """
         follow_up_tasks = []
         current_time = datetime.now()
         
+        # Limit follow-up generation based on current task load
+        total_tasks = len(self.task_queue) + len(self.active_tasks) + len(self.completed_tasks)
+        if total_tasks > 50:  # Maximum task limit to prevent resource exhaustion
+            logger.info(f"Task limit reached ({total_tasks}), skipping follow-up generation")
+            return follow_up_tasks
+        
         if not self.config['agent_config']['auto_exploration_enabled']:
             return follow_up_tasks
         
-        # Generate follow-ups based on task type and results
-        if completed_task.task_type == "issue_detection":
-            results = completed_task.results
+        try:
+            # Generate follow-ups based on task type and results
+            if completed_task.task_type == "issue_detection":
+                results = completed_task.results
+                
+                # If significant issues found, create simulation tasks (limited to top 2 issues)
+                if results.get('summary', {}).get('total_issues_detected', 0) > 0:
+                    issue_count = 0
+                    for issue_type, issues in results.items():
+                        if (issue_type != 'summary' and 
+                            isinstance(issues, list) and 
+                            len(issues) > 0 and 
+                            issue_count < 2):  # Limit to 2 follow-up tasks
+                            
+                            follow_up_tasks.append(AgentTask(
+                                task_id=f"SIM_{current_time.strftime('%H%M%S')}_{len(self.task_queue) + 1:03d}",
+                                task_type="scenario_simulation",
+                                description=f"Simulate interventions for {issue_type}",
+                                priority=TaskPriority.MEDIUM,
+                                status=TaskStatus.PENDING,
+                                created_at=current_time,
+                                updated_at=current_time,
+                                parameters={
+                                    'scenario_type': 'intervention_simulation',
+                                    'issue_type': issue_type,
+                                    'issues': issues[:3]  # Limit to top 3 issues
+                                },
+                                estimated_duration=20
+                            ))
+                            issue_count += 1
             
-            # If significant issues found, create simulation tasks
-            if results.get('summary', {}).get('total_issues_detected', 0) > 0:
-                for issue_type, issues in results.items():
-                    if issue_type != 'summary' and isinstance(issues, list) and len(issues) > 0:
-                        # Create simulation task for addressing issues
-                        follow_up_tasks.append(AgentTask(
-                            task_id=f"SIM_{current_time.strftime('%H%M%S')}_{len(self.task_queue) + 1:03d}",
-                            task_type="scenario_simulation",
-                            description=f"Simulate interventions for {issue_type}",
-                            priority=TaskPriority.MEDIUM,
-                            status=TaskStatus.PENDING,
-                            created_at=current_time,
-                            updated_at=current_time,
-                            parameters={
-                                'scenario_type': 'intervention_simulation',
-                                'issue_type': issue_type,
-                                'issues': issues[:3]  # Limit to top 3 issues
-                            },
-                            estimated_duration=20
-                        ))
+            elif completed_task.task_type == "cohort_analysis":
+                results = completed_task.results
+                
+                # If significant differences found, explore further (limited)
+                significant_comparisons = [k for k in results.keys() if 'vs' in k and 
+                                         'error' not in results[k] and 
+                                         any(test.get('significant', False) for test in results[k].get('statistical_tests', {}).values())]
+                
+                if significant_comparisons and len(follow_up_tasks) < 1:  # Limit to 1 follow-up
+                    follow_up_tasks.append(AgentTask(
+                        task_id=f"DEEP_{current_time.strftime('%H%M%S')}_{len(self.task_queue) + 1:03d}",
+                        task_type="deep_cohort_analysis",
+                        description="Deep dive into significant cohort differences",
+                        priority=TaskPriority.MEDIUM,
+                        status=TaskStatus.PENDING,
+                        created_at=current_time,
+                        updated_at=current_time,
+                        parameters={
+                            'significant_comparisons': significant_comparisons[:2],  # Limit comparisons
+                            'analysis_depth': 'detailed'
+                        },
+                        estimated_duration=25
+                    ))
         
-        elif completed_task.task_type == "cohort_analysis":
-            results = completed_task.results
-            
-            # If significant differences found, explore further
-            significant_comparisons = [k for k in results.keys() if 'vs' in k and 
-                                     'error' not in results[k] and 
-                                     any(test.get('significant', False) for test in results[k].get('statistical_tests', {}).values())]
-            
-            if significant_comparisons:
-                follow_up_tasks.append(AgentTask(
-                    task_id=f"DEEP_{current_time.strftime('%H%M%S')}_{len(self.task_queue) + 1:03d}",
-                    task_type="deep_cohort_analysis",
-                    description="Deep dive into significant cohort differences",
-                    priority=TaskPriority.MEDIUM,
-                    status=TaskStatus.PENDING,
-                    created_at=current_time,
-                    updated_at=current_time,
-                    parameters={
-                        'significant_comparisons': significant_comparisons,
-                        'analysis_depth': 'detailed'
-                    },
-                    estimated_duration=25
-                ))
+        except Exception as e:
+            logger.warning(f"Error generating follow-up tasks: {str(e)}")
+            return []
         
         # Limit follow-up tasks to prevent infinite exploration
-        max_follow_ups = self.config['exploration_config']['max_exploration_branches']
+        max_follow_ups = min(self.config['exploration_config']['max_exploration_branches'], 3)
         return follow_up_tasks[:max_follow_ups]
     
     async def _generate_session_insights(self, session_id: str, analysis_results: Dict[str, Any]) -> List[Insight]:
